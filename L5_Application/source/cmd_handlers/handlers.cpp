@@ -151,7 +151,7 @@ CMD_HANDLER_FUNC(healthHandler)
     output.printf( "Temp : %u.%u\n"
                     "Light: %u\n"
                     "Time     : %s"
-                    "Boot Time: %u/%u/%u,%02u:%02u:%02u\n"
+                    "Boot Time: %02u/%02u/%4u,%02u:%02u:%02u\n"
                     "Uart0 Watermarks: %u/%u (rx/tx)\n",
                     floatSig1, floatDec1,
                     LS.getRawValue(),

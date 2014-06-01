@@ -48,7 +48,7 @@ bool gps_task::run(void *p)
         /* For test boards when GPS is not attached, we don't want to continuously
          * poll for GPS data
          */
-        gpsTimeoutMs = 60 * 1000;
+        gpsTimeoutMs = 5 * 60 * 1000;
     }
     else {
         /* Parse the GPS string */
