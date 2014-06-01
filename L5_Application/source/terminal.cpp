@@ -29,7 +29,7 @@
 #include "utilities.h"      // PRINT_EXECUTION_SPEED()
 #include "handlers.hpp"     // Command-line handlers
 
-#include "file_logger.hpp"  // Logging
+#include "file_logger.h"
 #include "io.hpp"           // Board IO
 #include "tasks.hpp"
 

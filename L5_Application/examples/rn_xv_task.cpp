@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "rn_xv_task.hpp"
-#include "file_logger.hpp"
+#include "file_logger.h"
 #include "tlm/c_tlm_comp.h"
 #include "tlm/c_tlm_var.h"
 #include "utilities.h"

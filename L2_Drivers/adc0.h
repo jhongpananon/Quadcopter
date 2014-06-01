@@ -29,68 +29,20 @@
 extern "C" {
 #endif
 
-#include "LPC17xx.h"
-#include "sys_config.h"
-#include "FreeRTOS.h"
-
 
 
 /**
  * Initializes the ADC Peripheral
  * @note The PIN that will be used by ADC needs to be selected using PINSEL externally
  */
-static inline void adc0_init()
-{
-    // Clear PDN bit before powering up ADC0
-    lpc_pconp(pconp_adc, true);
-    lpc_pclk(pclk_adc, clkdiv_8);
-    LPC_ADC->ADCR = (1 << 21);      // Enable ADC
-
-    // Calculate and set prescalar for ADC.  13Mhz is maximum value
-    const uint32_t adcClock = (sys_get_cpu_clock() / 8);
-    const uint32_t maxAdcClock = (13 * 1000UL * 1000UL);
-    for(int i=2; i < 255; i+=2) {
-        if( (adcClock / i) < maxAdcClock) {
-            LPC_ADC->ADCR |= (i << 8);
-            break;
-        }
-    }
-}
+void adc0_init(void);
 
 /**
  * Gets an ADC reading from a channel number between 0 - 7
  * @returns 12-bit ADC value read from the ADC.
+ * @note If FreeRTOS is running, adc conversion will use interrupts and not poll for the result.
  */
-static inline uint16_t adc0_get_reading(uint8_t channel_num)
-{
-    if(channel_num >= 8) {
-        return 0;
-    }
-
-    uint16_t result = 0;
-    const uint32_t start_conversion = (1 << 24);
-    const uint32_t conversion_done = (1 << 31);
-
-    vPortEnterCritical();
-    {
-        // Clear previously selected channel
-        LPC_ADC->ADCR &= ~((0xFF) | (0x7 << 24));
-
-        // Set the channel number and start the conversion now
-        LPC_ADC->ADCR |= (1 << channel_num);
-        LPC_ADC->ADCR |= start_conversion;
-
-        // Wait for conversion to complete
-        while(! (LPC_ADC->ADGDR & conversion_done));
-
-        // Pick up the result from bits 15:4
-        result = LPC_ADC->ADGDR & 0xFFFF;
-        result >>= 4;
-    }
-    vPortExitCritical();
-
-    return result;
-}
+uint16_t adc0_get_reading(uint8_t channel_num);
 
 
 

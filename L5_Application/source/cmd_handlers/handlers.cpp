@@ -32,7 +32,7 @@
 #include "storage.hpp"          // Get Storage Device instances
 #include "fat/disk/spi_flash.h"
 #include "spi_sem.h"
-#include "file_logger.hpp"      // Logger class
+#include "file_logger.h"
 
 #include "uart0.hpp"
 #include "wireless.h"
@@ -191,7 +191,7 @@ CMD_HANDLER_FUNC(timeHandler)
 CMD_HANDLER_FUNC(logHandler)
 {
     if (cmdParams == "flush") {
-        FileLogger::getInstance().flush();
+        LOG_FLUSH();
         output.putline("Log(s) have been flushed");
     }
     else {
@@ -542,7 +542,7 @@ CMD_HANDLER_FUNC(rebootHandler)
     output.putline("Rebooting System");
 
     // Flush out everything before we reboot
-    FileLogger::getInstance().flush();
+    LOG_FLUSH();
 
     vTaskDelayMs(2000);
     sys_reboot();

@@ -21,7 +21,7 @@
 #include "examples.hpp"
 #include "rtc_alarm.h"
 #include "rtc.h"
-#include "file_logger.hpp"
+#include "file_logger.h"
 #include "io.hpp"
 #include "c_tlm_var.h"
 #include "io.hpp"
@@ -246,13 +246,13 @@ bool example_logger_qset::run(void *p)
             return false;
         }
 
-        LOG_INFO_PRINTF("Example log info");
+        LOG_INFO("Example log info");
     }
     else if(getQueueSetSelection() == mMin) {
         if(!xSemaphoreTake(mMin, 0)) {
             return false;
         }
-        LOG_WARN_PRINTF("Example log warning");
+        LOG_WARN("Example log warning");
     }
     else {
         LOG_ERROR("I should not get here!");
@@ -264,7 +264,7 @@ bool example_logger_qset::run(void *p)
      * We flush the remaining logger buffer, and return false to suspend the task.
      */
     if (count++ >= 60) {
-        FileLogger::getInstance().flush();
+        LOG_FLUSH();
         puts("Information was logged to a file.  Type 'cat log' to see it.");
         puts("Suspending this task on purpose");
         return false;

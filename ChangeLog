@@ -1,6 +1,9 @@
+2014-05-30  kang  <kang@preet>
+
+	* L3_Utils\file_logger.hpp: Changed logger completely to FreeRTOS task based logger
+	* L2_Drivers\src\adc.c: Added non-polling ADC implementation, moved inline defintions from header file to here.
+
 2014-05-24  kang  <kang@preet>
-
-
     * L2_Drivers\src\can.c Updated tests, and made sure all API and the driver works!
     * L2_Drivers\src\can.c (CAN_gen_sid): Can controller # should be (can -1)
 	* L2_Drivers\src\can.c (CAN_setup_filter): 
