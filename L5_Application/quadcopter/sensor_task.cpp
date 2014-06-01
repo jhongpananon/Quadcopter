@@ -3,10 +3,12 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "shared_handles.h"
+
 
 
 /// Define the stack size this task is estimated to use
-#define SENSOR_TASK_STACK_BYTES     (2 * 512)
+#define SENSOR_TASK_STACK_BYTES     (3 * 512)
 
 
 

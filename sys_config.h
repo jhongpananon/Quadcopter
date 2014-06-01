@@ -60,10 +60,9 @@ extern "C" {
 #define STARTUP_DELAY_MS                2000        ///< Start-up delay in milliseconds
 #define LOG_BOOT_INFO_TO_FILE           0           ///< Log a boot message to "boot.csv" file upon every boot
 #define LOG_BOOT_INFO_FILENAME          "boot.csv"  ///< Boot info is stored at this filename
-#define LOGGER_FILE_NAME                "log"       ///< Logger file name
 #define DISK_TLM_NAME                   "disk"      ///< Filename to save "disk" telemetry variables
 #define MAX_FILES_OPENED                3           ///< Maximum files that can be opened at once
-#define ENABLE_TELEMETRY                0           ///< Enable telemetry system. C_FILE_IO forced enabled if enabled
+#define ENABLE_TELEMETRY                1           ///< Enable telemetry system. C_FILE_IO forced enabled if enabled
 #define ENABLE_C_FILE_IO                0           ///< Allow stdio fopen() fclose() to redirect to ff.h
 
 

@@ -302,9 +302,6 @@ wifiTask::wifiTask(UartDev& uartForWifi, uint8_t priority) :
 
 bool wifiTask::init()
 {
-    // Initialize at the default baud rate, we'll change it if we cannot communicate
-    mWifi.init(WIFI_BAUD_RATE, WIFI_RXQ_SIZE, WIFI_TXQ_SIZE);
-
     return addSharedObject(WIFI_SHR_OBJ, mHttpReqQueue);
 }
 

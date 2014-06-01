@@ -3,10 +3,13 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "shared_handles.h"
+#include "file_logger.h"
+
 
 
 /// Define the stack size this task is estimated to use
-#define RC_RX_TASK_STACK_BYTES        (2 * 512)
+#define RC_RX_TASK_STACK_BYTES        (3 * 512)
 
 
 
@@ -22,6 +25,7 @@ bool rc_remote_task::init(void)
 
     if (success) {
         /* Init RC remote receiver input pin interrupts */
+        addSharedObject(shared_RcReceiverSemaphore, xSemaphoreCreateBinary());
     }
 
     // Do not update task statistics (stack usage) too frequently
@@ -32,15 +36,19 @@ bool rc_remote_task::init(void)
 
 bool rc_remote_task::run(void *p)
 {
+    const TickType_t timeout = OS_MS(1000);
+
     /* Wait for semaphore (upon pin change interrupt) */
+    if (!xSemaphoreTake(getSharedObject(shared_RcReceiverSemaphore), timeout)) {
+        LOG_ERROR("RC receiver failed!");
+        return false;
+    }
 
     /* Capture the time */
 
     /* Decode all the inputs */
 
     /* Set the inputs to the flight controller class */
-
-    vTaskDelay(1); /* Remove this after semaphores are setup */
 
     return true;
 }

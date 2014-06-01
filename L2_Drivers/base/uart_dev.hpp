@@ -61,20 +61,6 @@
 class UartDev : public CharDev
 {
     public:
-        /**
-         * Initializes the UART register including Queues, baudrate and hardware.
-         * Parent class should call this method before initializing Pin-Connect-Block
-         * @param pclk      The system peripheral clock for this UART
-         * @param baudRate  The baud rate to set
-         * @param rxQSize   The receive queue size
-         * @param txQSize   The transmit queue size
-         * @post    Sets 8-bit mode, no parity, no flow control.
-         * @warning This will not initialize the PINS, so user needs to do pin
-         *          selection because LPC's same UART hardware, such as UART2
-         *          is available on multiple pins.
-         * @note If the txQSize is too small, functions performing printf will start to block.
-         */
-        virtual bool init(unsigned int pclk, unsigned int baudRate, int rxQSize=32, int txQSize=32);
 
         /// Reset the baud-rate after UART has been initialized
         void setBaudRate(unsigned int baudRate);
@@ -127,6 +113,21 @@ class UartDev : public CharDev
         void handleInterrupt();
 
     protected:
+        /**
+         * Initializes the UART register including Queues, baudrate and hardware.
+         * Parent class should call this method before initializing Pin-Connect-Block
+         * @param pclk      The system peripheral clock for this UART
+         * @param baudRate  The baud rate to set
+         * @param rxQSize   The receive queue size
+         * @param txQSize   The transmit queue size
+         * @post    Sets 8-bit mode, no parity, no flow control.
+         * @warning This will not initialize the PINS, so user needs to do pin
+         *          selection because LPC's same UART hardware, such as UART2
+         *          is available on multiple pins.
+         * @note If the txQSize is too small, functions performing printf will start to block.
+         */
+        bool init(unsigned int pclk, unsigned int baudRate, int rxQSize=32, int txQSize=32);
+
         /**
          * Protected constructor that requires parent class to provide UART's
          * base register address for which to operate this UART driver

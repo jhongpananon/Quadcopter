@@ -3,6 +3,8 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "shared_handles.h"
+
 
 
 /// Define the stack size this task is estimated to use

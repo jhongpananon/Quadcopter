@@ -65,7 +65,7 @@ extern "C" {
  * @warning As of now, the logging only works if FreeRTOS is running!
  *          If FreeRTOS is not running, you will likely crash!
  */
-#define LOG_ERROR(msg, p...)  logger_log (log_info, __FILE__, __FUNCTION__, __LINE__, msg, ## p)
+#define LOG_ERROR(msg, p...)  logger_log (log_error, __FILE__, __FUNCTION__, __LINE__, msg, ## p)
 #define LOG_WARN(msg, p...)   logger_log (log_warn, __FILE__, __FUNCTION__, __LINE__, msg, ## p)
 #define LOG_INFO(msg, p...)   logger_log (log_info, __FILE__, __FUNCTION__, __LINE__, msg, ## p)
 /** @} */
@@ -76,7 +76,7 @@ extern "C" {
  * This can save space to log simple messages when you don't want to know the
  * function name, line number and filename of where the logger function was called.
  */
-#define LOG_INFO_SIMPLE(msg)   logger_log (log_info, NULL, NULL, 0, msg, ##p)
+#define LOG_INFO_SIMPLE(msg)   logger_log (log_info, NULL, NULL, 0, msg)
 
 /**
  * Flushes the cached log data to the file

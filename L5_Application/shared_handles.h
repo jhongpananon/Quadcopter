@@ -22,7 +22,8 @@
  * @brief Contains enumeration of shared handles used in the project.
  * @see   scheduler_task::addSharedHandle()
  *
- * 20140215     : Initial
+ * 20140601: Added quadcopter enumeration IDs
+ * 20140215: Initial
  */
 #ifndef SHARED_HANDLES_H__
 #define SHARED_HANDLES_H__
@@ -35,6 +36,10 @@
 enum {
     shared_SensorQueue,    ///< Shared handle used by examples (producer and consumer tasks)
     shared_learnSemaphore, ///< Terminal command gives this semaphore to remoteTask (IR sensor task)
+
+    /* Quadcopter shared IDs */
+    shared_SensorDataReadySemaphore,    ///< Semaphore given when all IMU values are obtained
+    shared_RcReceiverSemaphore,         ///< Semaphore given when RC receiver interrupt is triggered
 };
 
 

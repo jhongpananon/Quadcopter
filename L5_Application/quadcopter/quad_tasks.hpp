@@ -64,7 +64,7 @@ class gps_task : public scheduler_task
          *
          * @note pGpsUart's UART should already be initialized at the GPS baudrate
          */
-        gps_task(UartDev *pGpsUart, const uint8_t priority);
+        gps_task(const uint8_t priority, UartDev *pGpsUart);
         bool init(void);
         bool run(void *p);
 
