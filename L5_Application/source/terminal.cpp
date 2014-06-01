@@ -215,7 +215,7 @@ bool terminalTask::saveDiskTlm(void)
     tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
 
     /* Size of telemetry shouldn't change */
-    if (mDiskTlmSize != tlm_binary_get_size_one(disk)) {
+    if (0 == mDiskTlmSize || mDiskTlmSize != tlm_binary_get_size_one(disk)) {
         return changed;
     }
 
