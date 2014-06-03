@@ -36,13 +36,13 @@ bool sensor_task::init(void)
     /* TODO: Set min/max according to the particular sensor */
     if (success) {
         mAcceleration.setMinimumValue(4 * -1024);
-        mAcceleration.setMinimumValue(4 * +1024);
+        mAcceleration.setMaximumValue(4 * +1024);
 
         mGyro.setMinimumValue(4 * -1024);
-        mGyro.setMinimumValue(4 * +1024);
+        mGyro.setMaximumValue(4 * +1024);
 
         mMagno.setMinimumValue(4 * -1024);
-        mMagno.setMinimumValue(4 * +1024);
+        mMagno.setMaximumValue(4 * +1024);
     }
 
     // Do not update task statistics (stack usage) too frequently

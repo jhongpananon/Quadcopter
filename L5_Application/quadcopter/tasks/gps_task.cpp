@@ -45,14 +45,14 @@ bool gps_task::run(void *p)
 
     // If GPS fails, or is un-attached, we don't want to log the error every second
     static uint32_t periodicLog = 0;
-    const uint32_t periodSeconds = 60;
+    const uint32_t periodSeconds = 3 * 60;
 
     float longitude = 0;
     float latitude = 0;
 
     /* Log an error if GPS data not retrieved within the expected time */
     if (!mpGpsUart->gets(&buffer[0], sizeof(buffer) - 1, OS_MS(gpsTimeoutMs))) {
-        if (0 == (++periodicLog % periodSeconds)) {
+        if (0 == (periodicLog++ % periodSeconds)) {
             LOG_ERROR("GPS data not received within %u ms", gpsTimeoutMs);
         }
     }

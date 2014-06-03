@@ -87,7 +87,7 @@ bool battery_monitor_task::run(void *p)
     q.setBatteryPercentage(percentUint);
 
     static uint8_t logPeriodically = 0;
-    const uint8_t period = 10;
+    const uint8_t period = 15;
     if (0 == (++logPeriodically % period)) {
         LOG_INFO_SIMPLE("Battery: %.1f volts, estimated charge: %u%% (%.2f/%.2f)",
                         voltage, percentUint, mLowestVoltage, mHighestVoltage);
