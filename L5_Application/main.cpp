@@ -51,7 +51,7 @@
  *  P0.0    RC-Ch1 - Pitch
  *  P0.1    RC-Ch2 - Roll
  *  P0.29   RC-Ch3 - Yaw
- *  P2.30   RC-Ch4 - Throttle
+ *  P0.30   RC-Ch4 - Throttle
  *
  *  Port 2 supports interrupts that can be used to capture RC receiver inputs.
  *  P2.6    RC-Ch5 (available) - can also be used for timer CAPTURE with OR'd RC input design
