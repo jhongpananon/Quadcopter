@@ -1,7 +1,11 @@
+/**
+ * @file
+ */
 #include <stdint.h>
 
 #include "scheduler_task.hpp"
 #include "uart_dev.hpp"
+#include "three_axis_sensor.hpp"
 
 
 
@@ -22,6 +26,10 @@ class sensor_task : public scheduler_task
     protected:
     private:
         sensor_task(); ///< Disallow this constructor (no code is defined)
+
+        ThreeAxisSensor mAcceleration;  ///< Acceleration sensor data
+        ThreeAxisSensor mGyro;          ///< Gyroscope sensor data
+        ThreeAxisSensor mMagno;         ///< Magnetometer sensor data
 };
 
 
@@ -113,5 +121,26 @@ class battery_monitor_task : public scheduler_task
 
     protected:
     private:
-        battery_monitor_task(); ///< Disallow this constructor (no code is defined)
+        battery_monitor_task();       ///< Disallow this constructor (no code is defined)
+        float mLowestVoltage;         ///< Lowest battery voltage
+        float mHighestVoltage;        ///< Highest battery voltage
+};
+
+
+
+/**
+ * This is the "kill switch" task
+ *
+ * @ingroup Quadcopter Tasks
+ */
+class kill_switch_task : public scheduler_task
+{
+    public:
+        kill_switch_task(const uint8_t priority);
+        bool init(void);
+        bool run(void *p);
+
+    protected:
+    private:
+        kill_switch_task(); ///< Disallow this constructor (no code is defined)
 };

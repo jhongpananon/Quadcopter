@@ -184,10 +184,12 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
     xQueueReceive(g_empty_buffer_queue, &buffer, portMAX_DELAY);
 
     /* Write the header including time, filename, function name etc */
-    len = sprintf(buffer, "%u/%u,%02d:%02d:%02d,%u,%s,%s,%s(),%u,",
+    len = sprintf(buffer, "%u/%u,%02d:%02d:%02d,%u,%s,%s,%s%s,%u,",
                     (unsigned)time.month, (unsigned)time.day, (unsigned)time.hour,
                     (unsigned)time.min, (unsigned)time.sec, uptime,
-                    type_str[type], filename, func_name, line_num
+                    type_str[type], filename, func_name,
+                    func_name[0] ? "()" : "", /* If function name exists, only then append () */
+                    line_num
                     );
 
     /* Append actual user message */

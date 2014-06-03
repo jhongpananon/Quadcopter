@@ -49,12 +49,12 @@ extern "C" {
  * the data buffer to the file.  So in an event when no logging calls occur and
  * there is data in the buffer, we will write it to the file after this time.
  */
-#define FILE_LOGGER_BUFFER_SIZE      1024       ///< Recommend multiples of 512
-#define FILE_LOGGER_MSG_BUFFERS      5          ///< Number of buffers
-#define FILE_LOGGER_MSG_MAX_LEN      128        ///< Max length of a log message
-#define FILE_LOGGER_FILENAME         "log.csv"  ///< Destination filename
-#define FILE_LOGGER_STACK_SIZE       (1200 / 4) ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
-#define FILE_LOGGER_FLUSH_TIMEOUT    60         ///< Logs are flushed after this time
+#define FILE_LOGGER_BUFFER_SIZE      (4 * 512)   ///< Recommend multiples of 512
+#define FILE_LOGGER_MSG_BUFFERS      10          ///< Number of buffers
+#define FILE_LOGGER_MSG_MAX_LEN      150         ///< Max length of a log message
+#define FILE_LOGGER_FILENAME         "log.csv"   ///< Destination filename
+#define FILE_LOGGER_STACK_SIZE       (1200 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
+#define FILE_LOGGER_FLUSH_TIMEOUT    (1 * 60)    ///< Logs are flushed after this time
 /** @} */
 
 
@@ -76,7 +76,7 @@ extern "C" {
  * This can save space to log simple messages when you don't want to know the
  * function name, line number and filename of where the logger function was called.
  */
-#define LOG_INFO_SIMPLE(msg)   logger_log (log_info, NULL, NULL, 0, msg)
+#define LOG_INFO_SIMPLE(msg, p...)   logger_log (log_info, NULL, NULL, 0, msg, ## p)
 
 /**
  * Flushes the cached log data to the file

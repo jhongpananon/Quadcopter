@@ -1,9 +1,11 @@
+/**
+ * @file
+ */
 #include "quad_tasks.hpp"
+#include "file_logger.h"
 
 #include "FreeRTOS.h"
 #include "semphr.h"
-
-#include "file_logger.h"
 
 
 
@@ -39,16 +41,20 @@ bool gps_task::run(void *p)
     char buffer[maxGpsStringLen] = { 0 };
 
     // Assuming 1Hz GPS, we should receive the data within 1100ms
-    static uint32_t gpsTimeoutMs = 1100;
+    const uint32_t gpsTimeoutMs = 1100;
+
+    // If GPS fails, or is un-attached, we don't want to log the error every second
+    static uint32_t periodicLog = 0;
+    const uint32_t periodSeconds = 60;
+
+    float longitude = 0;
+    float latitude = 0;
 
     /* Log an error if GPS data not retrieved within the expected time */
     if (!mpGpsUart->gets(&buffer[0], sizeof(buffer) - 1, OS_MS(gpsTimeoutMs))) {
-        LOG_ERROR("GPS data not received within %u ms", gpsTimeoutMs);
-
-        /* For test boards when GPS is not attached, we don't want to continuously
-         * poll for GPS data
-         */
-        gpsTimeoutMs = 5 * 60 * 1000;
+        if (0 == (++periodicLog % periodSeconds)) {
+            LOG_ERROR("GPS data not received within %u ms", gpsTimeoutMs);
+        }
     }
     else {
         /* Parse the GPS string */

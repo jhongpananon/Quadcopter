@@ -4,11 +4,12 @@
 #include "semphr.h"
 
 #include "shared_handles.h"
+#include "file_logger.h"
 
 
 
 /// Define the stack size this task is estimated to use
-#define QUADCOPTER_TASK_STACK_BYTES        (8 * 512)
+#define QUADCOPTER_TASK_STACK_BYTES        (3 * 512)
 
 
 
@@ -35,11 +36,11 @@ bool quadcopter_task::init(void)
 bool quadcopter_task::run(void *p)
 {
     const uint32_t timeoutMs = 100;
-    if (!xSemaphoreTake(getSharedObject(shared_SensorDataReadySemaphore), OS_MS(timeoutMs))) {
-        /* Log an error */
-    }
 
-    /* Set the sensor values */
+    if (!xSemaphoreTake(getSharedObject(shared_SensorDataReadySemaphore), OS_MS(timeoutMs))) {
+        LOG_ERROR("Unable to get sensor data input within %ums", timeoutMs);
+        return true;
+    }
 
     /* Run the filters */
 

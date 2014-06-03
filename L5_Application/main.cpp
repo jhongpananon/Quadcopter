@@ -81,6 +81,9 @@ int main(void)
     /* Consumes very little CPU, but need highest priority to handle mesh network ACKs */
     scheduler_add_task(new wirelessTask(PRIORITY_CRITICAL));
 
+    /* Finally, the kill-switch task with high priority */
+    scheduler_add_task(new kill_switch_task(PRIORITY_CRITICAL));
+
     /* No need for IR remote control task */
     // scheduler_add_task(new remoteTask  (PRIORITY_LOW));
 

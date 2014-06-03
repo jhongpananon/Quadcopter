@@ -139,7 +139,7 @@ bool remoteTask::run(void *p)
 
 void remoteTask::handleUserEntry(int num)
 {
-    /* TODO Handle the IR number here for your project */
+    /* Handle the IR number here for your project */
 }
 
 bool remoteTask::getNumberFromCode(uint32_t code, uint32_t& num)
