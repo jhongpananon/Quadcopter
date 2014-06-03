@@ -24,14 +24,50 @@
  *
  * @note  printf of %f may be turned off to save memory, this can be configured at sys_config.h
  */
-#include <stdio.h>
 #include "tasks.hpp"
 #include "quad_tasks.hpp"
-#include "uart2.hpp"
-#include "uart3.hpp"
 #include "file_logger.h"
 
+#include "uart2.hpp"
+#include "uart3.hpp"
 
+
+
+/**
+ * Hardware pins:
+ *  P0.26   ADC-3   1/10th resistor divider of Quadcopter rotors' voltage
+ *  P1.30   ADC-4   Available
+ *  P1.31   ADC-5   Available
+ *
+ *  Port2 is the PWM output port (on first six pins)
+ *  P2.0    PWM Rotor 1
+ *  P2.1    PWM Rotor 2
+ *  P2.2    PWM Rotor 3
+ *  P2.3    PWM Rotor 4
+ *  P2.4    Available (reserved) PWM
+ *  P2.5    Available (reserved) PWM
+ *
+ *  Port 0 supports interrupts, so for additional interrupt(s), we can use:
+ *  P0.0    RC-Ch1 - Pitch
+ *  P0.1    RC-Ch2 - Roll
+ *  P0.29   RC-Ch3 - Yaw
+ *  P2.30   RC-Ch4 - Throttle
+ *
+ *  Port 2 supports interrupts that can be used to capture RC receiver inputs.
+ *  P2.6    RC-Ch5 (available) - can also be used for timer CAPTURE with OR'd RC input design
+ *  P2.7    RC-Ch6 (available)
+ *
+ *  UART2 is routed to the Xbee socket
+ *  P2.8    Uart2 Tx --> Bluetooth
+ *  P2.9    Uart2 Rx <-- Bluetooth
+ *
+ *  UART3 is routed to pin-outs
+ *  P4.28   Uart3 Tx --> GPS
+ *  P4.29   Uart3 Rx <-- GPS
+ *
+ *  I2C2    External I2C sensor(s)
+ *          Internal addresses: 0x38, 0x40, 0x90
+ */
 
 /**
  * The main() creates tasks or "threads".  See the documentation of scheduler_task class at cpp_task.hpp
