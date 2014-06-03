@@ -57,25 +57,26 @@ bool sensor_task::init(void)
 bool sensor_task::run(void *p)
 {
     bool success = true;
+    int32_t x = 0, y = 0, z = 0;
 
     /* Get the sensor data
      * TODO Get values from the attached MPU-9150
      */
-    mAcceleration.setX(AS.getX());
-    mAcceleration.setY(AS.getY());
-    mAcceleration.setZ(AS.getZ());
+    x = AS.getX();
+    y = AS.getY();
+    z = AS.getZ();
 
     /* Set the raw data */
-    mAcceleration.setAll(0, 0, 0);
-    mGyro.setAll(0, 0, 0);
-    mMagno.setAll(0, 0, 0);
+    mAcceleration.setAll(x, y, z);
+            mGyro.setAll(0, 0, 0);
+           mMagno.setAll(0, 0, 0);
 
     /* Send the data to the flight controller class */
     /* TODO: Send this to the singleton instance, this is done just to show an example */
     FlightController f;
     f.setRawAcceleration(mAcceleration);
-    f.setRawAcceleration(mGyro);
-    f.setRawAcceleration(mMagno);
+    f.setRawGyro(mGyro);
+    f.setRawMagno(mMagno);
 
     /* Now let the processing task process the values and run its algorithms */
     success = xSemaphoreGive(getSharedObject(shared_SensorDataReadySemaphore));

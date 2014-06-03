@@ -42,7 +42,9 @@ bool quadcopter_task::run(void *p)
         return true;
     }
 
-    /* Run the filters */
+    /* Run the filters on the raw input received by the flight controller */
+    // FlightController f;
+    // f.filterRawInputs();
 
     /* Fly the quadcopter */
 

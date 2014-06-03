@@ -24,15 +24,27 @@ class FlightController
         void setRawMagno(const ThreeAxisSensor& data)        { mMagnoSensor = data; }
         /** @} */
 
+        /**
+         * Runs a filter on the raw inputs supplied to the sensors
+         * XXX: Maybe a first stage "smoothing" filter here?
+         *      This should call filters at ThreeAxisSensor class
+         */
+        void runRawInputFilter(void);
+
         void runPID(void);
-        void runKalman(void);
+        void runKalmanFilter(void);
 
         /**
          * @{ API to set flight parameters
+         *
+         * @param[in] pitch Pitch value from -100 -> +100
+         * @param[in] roll  Roll value from -100 -> +100
+         * @param[in] yaw   Yaw value from -100 -> +100
+         *
          * TODO : This should be a hidden interface, not everyone should be allowed to do this
          */
-        void setFlightParameters(uint32_t pitch, uint32_t roll, uint32_t yaw);
-        void setLift(uint32_t percentage);
+        void setFlightParameters(int8_t pitch, int8_t roll, int8_t yaw);
+        void setLift(uint8_t percentage);
         /** @} */
 
     protected:
@@ -40,6 +52,10 @@ class FlightController
         ThreeAxisSensor mAccelerationSensor;    ///< Acceleration sensor data
         ThreeAxisSensor mGyroSensor;            ///< Gyroscope sensor data
         ThreeAxisSensor mMagnoSensor;           ///< Magnetometer sensor data
+
+        int8_t mInputPitch;     ///< User input for pitch
+        int8_t mInputRoll;      ///< User input for roll
+        int8_t mInputYaw;       ///< User input for yaw
 };
 
 

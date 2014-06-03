@@ -1,6 +1,8 @@
 /**
  * @file
  */
+#include <math.h>
+
 #include "quad_tasks.hpp"
 #include "quadcopter.hpp"
 
@@ -26,8 +28,9 @@
 
 battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     scheduler_task("battery", BATTERY_TASK_STACK_BYTES, priority),
-    mLowestVoltage(1000), /* A really high voltage, it will be reset upon actual voltage sensed */
-    mHighestVoltage(-1)   /* A really low voltage, it will be reset upon actual voltage sensed */
+    mLowestVoltage(1000),       /* A really high voltage, it will be reset upon actual voltage sensed */
+    mHighestVoltage(-1),        /* A really low voltage, it will be reset upon actual voltage sensed */
+    mVoltageDeltaForLog(0.10)   /* Default configuration to log data if voltage changes */
 {
     /* Use init() for memory allocation */
 }
@@ -45,6 +48,7 @@ bool battery_monitor_task::init(void)
         tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
         TLM_REG_VAR(disk, mLowestVoltage, tlm_float);
         TLM_REG_VAR(disk, mHighestVoltage, tlm_float);
+        TLM_REG_VAR(disk, mVoltageDeltaForLog, tlm_float);
     }
 
     // Do not update task statistics (stack usage) too frequently
@@ -86,12 +90,15 @@ bool battery_monitor_task::run(void *p)
     Quadcopter q;
     q.setBatteryPercentage(percentUint);
 
-    static uint8_t logPeriodically = 0;
-    const uint8_t period = 15;
-    if (0 == (++logPeriodically % period)) {
-        LOG_INFO_SIMPLE("Battery: %.1f volts, estimated charge: %u%% (%.2f/%.2f)",
+    /* Only log data if there is enough delta */
+    static float previousVoltage = voltage;
+    if ( fabs(voltage - previousVoltage) > mVoltageDeltaForLog)
+    {
+        /* use commas to be in-line with CSV format to easily plot in excel */
+        LOG_INFO_SIMPLE("Battery volts, %.2f, estimated charge %%, %u, (%.2f/%.2f)",
                         voltage, percentUint, mLowestVoltage, mHighestVoltage);
     }
+    previousVoltage = voltage;
 
     return true;
 }

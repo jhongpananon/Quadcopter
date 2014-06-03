@@ -124,6 +124,7 @@ class battery_monitor_task : public scheduler_task
         battery_monitor_task();       ///< Disallow this constructor (no code is defined)
         float mLowestVoltage;         ///< Lowest battery voltage
         float mHighestVoltage;        ///< Highest battery voltage
+        float mVoltageDeltaForLog;    ///< Data is logged if previous voltage delta is larger than this
 };
 
 
