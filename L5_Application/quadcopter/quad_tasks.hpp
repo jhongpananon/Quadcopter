@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #include "scheduler_task.hpp"
+
+#include "sampler.hpp"
 #include "uart_dev.hpp"
 #include "three_axis_sensor.hpp"
 
@@ -125,6 +127,22 @@ class battery_monitor_task : public scheduler_task
         float mLowestVoltage;         ///< Lowest battery voltage
         float mHighestVoltage;        ///< Highest battery voltage
         float mVoltageDeltaForLog;    ///< Data is logged if previous voltage delta is larger than this
+
+        /**
+         * We take multiple ADC samples before we take the average.
+         * Note that we need uint32_t rather than the adequate uint16_t for 12-bit ADC
+         * because when we sum and average using this class, it may overflow.
+         */
+        Sampler<uint32_t> mAdcSamples;
+
+        /// The frequency at which we collect the samples in milliseconds
+        static const int mSampleFrequencyMs = 250;
+
+        /**
+         * The number of samples to take before we average it and use it to compute the voltage
+         * 250 * 12 = 3 seconds
+         */
+        static const int mNumAdcSamplesBeforeVoltageUpdate = 12;
 };
 
 

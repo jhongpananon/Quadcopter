@@ -30,7 +30,8 @@ battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     scheduler_task("battery", BATTERY_TASK_STACK_BYTES, priority),
     mLowestVoltage(1000),       /* A really high voltage, it will be reset upon actual voltage sensed */
     mHighestVoltage(-1),        /* A really low voltage, it will be reset upon actual voltage sensed */
-    mVoltageDeltaForLog(0.10)   /* Default configuration to log data if voltage changes */
+    mVoltageDeltaForLog(0.10),  /* Default configuration to log data if voltage changes */
+    mAdcSamples(mNumAdcSamplesBeforeVoltageUpdate)
 {
     /* Use init() for memory allocation */
 }
@@ -55,20 +56,34 @@ bool battery_monitor_task::init(void)
     setStatUpdateRate(5 * 60 * 1000);
 
     // Monitor the battery at a very slow rate
-    setRunDuration(1000);
+    setRunDuration(mSampleFrequencyMs);
 
     return success;
 }
 
 bool battery_monitor_task::run(void *p)
 {
-    /* Read the ADC here */
-    uint16_t rawAdc = adc0_get_reading(EXTERNAL_VOLTAGE_ADC_CH_NUM);
+    /* Read the ADC */
+    uint16_t adcValue = adc0_get_reading(EXTERNAL_VOLTAGE_ADC_CH_NUM);
+
+    /* Store the result into our samples' array */
+    mAdcSamples.storeSample(adcValue);
+
+    /* If samples not ready, just return */
+    if (!mAdcSamples.allSamplesReady()) {
+        return true;
+    }
+
+    /* All samples are ready, so get the average value */
+    adcValue = mAdcSamples.getAverage();
+
+    /* Clear the samples for next update */
+    mAdcSamples.clear();
 
     /* Convert ADC to voltage value */
     const uint32_t adcConverterBitResolution = 12;
     const float voltsPerAdcStep = 3.3f / (1 << adcConverterBitResolution);
-    float voltage = (rawAdc * voltsPerAdcStep) * EXTERNAL_VOLTAGE_DIVIDER;
+    float voltage = (adcValue * voltsPerAdcStep) * EXTERNAL_VOLTAGE_DIVIDER;
 
     /* Update the high/low voltages */
     if (voltage > mHighestVoltage) {
@@ -78,13 +93,13 @@ bool battery_monitor_task::run(void *p)
         mLowestVoltage = voltage;
     }
 
-    /* Convert voltage value to percentage value.
+    /* Estimate the percentage of charge based on the voltage right now
      * We add 0.01f to avoid divide by zero.
      */
-    float percent = voltage / (0.01f + mHighestVoltage - mLowestVoltage) * 100.0f;
+    const float percent = voltage / (0.01f + mHighestVoltage - mLowestVoltage) * 100.0f;
 
     /* Set the value to the quadcopter class */
-    uint8_t percentUint = (uint8_t) percent;
+    const uint8_t percentUint = (uint8_t) percent;
 
     /* XXX This is just done for the example, we should set it to the real quadcopter class */
     Quadcopter q;
