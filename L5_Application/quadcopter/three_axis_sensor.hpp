@@ -8,6 +8,62 @@
 
 
 /**
+ * A single axis sensor
+ */
+template <typename TYPE>
+class OneAxisSensor
+{
+    public:
+        OneAxisSensor() : mRawValue(0), mOffset(0), mMinimum(0), mMaximum(0)
+        {
+
+        }
+
+        /**
+         * @returns the value of the sensor after factoring the offset
+         */
+        TYPE get(void) const
+        {
+            TYPE val = mRawValue - mOffset;
+
+            if (val < mMinimum) {
+                val = mMinimum;
+            }
+            else if (val > mMaximum) {
+                val = mMaximum;
+            }
+
+            return val;
+        }
+
+        /**
+         * Sets the raw value of the sensor
+         */
+        void set(const TYPE& value)
+        {
+            mRawValue = value;
+        }
+
+        /**
+         * @{ Set the sensor data minimum and maximum values
+         */
+        void setMinimumValue(const TYPE& value)   { mMinimum = value; }
+        void setMaximumValue(const TYPE& value)   { mMaximum = value; }
+        /** @} */
+
+        /**
+         * Sets the offset value of the sensor
+         */
+        void setOffset(const TYPE& value) { mOffset = value; }
+
+    private:
+        TYPE mRawValue;   ///< Actual (raw) value
+        TYPE mOffset;     ///< Offset value
+        TYPE mMinimum;    ///< The lowest value that can be set
+        TYPE mMaximum;    ///< The highest value that can be set
+};
+
+/**
  * The class for sensor data.
  * The idea behind this class is that any kind of sensor such as acceleration and gyro
  * can be generalized.  Whether the sensor is 10-bit or 12-bit, we can compute its
@@ -19,46 +75,49 @@
  */
 class ThreeAxisSensor
 {
+    /* Public variables */
     public:
-        ThreeAxisSensor() : mMinimum(INT32_MIN), mMaximum(INT32_MAX), mXaxis(0), mYaxis(0), mZaxis(0)
+        OneAxisSensor<int32_t> x;
+        OneAxisSensor<int32_t> y;
+        OneAxisSensor<int32_t> z;
+
+    public:
+        ThreeAxisSensor()
         {
             /* Avoid heap allocation for this simple class */
         }
 
-        /**
-         * @{ Set the sensor data minimum and maximum values
-         */
-        void setMinimumValue(const int32_t value)   { mMinimum = value; }
-        void setMaximumValue(const int32_t value)   { mMaximum = value; }
-        /** @} */
-
-        /**
-         * @{ Get the sensor data values
-         */
-        int32_t getX(void) const { return mXaxis; }
-        int32_t getY(void) const { return mYaxis; }
-        int32_t getZ(void) const { return mZaxis; }
-        void getAll(int32_t &x, int32_t &y, int32_t &z) const { x = mXaxis; y = mYaxis; z = mZaxis; }
-        /** @} */
-
-        /**
-         * @{ Set the sensor data values
-         */
-        void setX(const int32_t value) { if (value >= mMinimum && value <= mMaximum) mXaxis = value; }
-        void setY(const int32_t value) { if (value >= mMinimum && value <= mMaximum) mXaxis = value; }
-        void setZ(const int32_t value) { if (value >= mMinimum && value <= mMaximum) mXaxis = value; }
-        void setAll(const int32_t x, const int32_t y, const int32_t z)
+        /// Get the sensor data values
+        void getAll(int32_t &xval, int32_t &yval, int32_t &zval) const
         {
-            setX(x);
-            setY(y);
-            setZ(z);
+            xval = x.get();
+            yval = y.get();
+            zval = z.get();
         }
-        /** @} */
+
+        /// Sets the sensor data values
+        void setAll(const int32_t &xval, const int32_t &yval, const int32_t &zval)
+        {
+            x.set(xval);
+            y.set(yval);
+            z.set(zval);
+        }
+
+        /// Sets the minimum and maximum values for all axis
+        void setMinimumMaximumForAllAxis(const int32_t &min, const int32_t &max)
+        {
+            x.setMinimumValue(min);
+            x.setMaximumValue(max);
+
+            y.setMinimumValue(min);
+            y.setMaximumValue(max);
+
+            z.setMinimumValue(min);
+            z.setMaximumValue(max);
+        }
 
     private:
-        int32_t mMinimum;   ///< Minimum value of the sensor
-        int32_t mMaximum;   ///< Maximum value of the sensor
-        int32_t mXaxis, mYaxis, mZaxis; ///< Actual sensor data values
+
 };
 
 
