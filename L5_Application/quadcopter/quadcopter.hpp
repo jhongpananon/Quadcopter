@@ -26,7 +26,10 @@ class Quadcopter
          * @param [in] longitude
          * @param [in] latitude
          */
-        void setGps(float longitude, float latitude);
+        void setGps(float longitude, float latitude)
+        {
+
+        }
 
         /**
          * Sets the Quadcopter's mode
