@@ -191,8 +191,10 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
     }
 
     /* Get an available buffer to write the data to */
-    if (xQueueReceive(g_empty_buffer_queue, &buffer, OS_MS(FILE_LOGGER_BLOCK_TIME_MS))) {
+    if (!xQueueReceive(g_empty_buffer_queue, &buffer, OS_MS(FILE_LOGGER_BLOCK_TIME_MS))) {
         ++g_blocked_calls;
+
+        /* This time, just block forever until we get a buffer */
         xQueueReceive(g_empty_buffer_queue, &buffer, portMAX_DELAY);
     }
 
