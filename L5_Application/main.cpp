@@ -54,7 +54,7 @@
  *  P0.30   RC-Ch4 - Throttle
  *
  *  Port 2 supports interrupts that can be used to capture RC receiver inputs.
- *  P2.6    RC-Ch5 (available) - can also be used for timer CAPTURE with OR'd RC input design
+ *  P2.6    RC-Ch5 (available) CAP1.0 - can also be used for timer CAPTURE with OR'd RC input design
  *  P2.7    RC-Ch6 (available)
  *
  *  UART2 is routed to the Xbee socket
@@ -107,7 +107,16 @@ int main(void)
     scheduler_add_task(new sensor_task    (PRIORITY_HIGH));
     scheduler_add_task(new quadcopter_task(PRIORITY_HIGH));
 
-    /* GPS and RC receiver tasks can execute and miss their deadline without a big issue */
+    /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
+     *
+     * RC receiver input is queued by ISR, so it doens't need any attention up to 20ms
+     * if the queue size is as deep as the number of channels used since the RC receiver
+     * frequency is 50Hz for the inputs.
+     *
+     * Likewise, the GPS data is queued to the UART, so at 38400bps, there are only 4 chars
+     * per millisecond.  So a 100 char string would take 25ms, so 100 sized queue should be
+     * good enough such that this task won't need any CPU for 25ms.
+     */
     scheduler_add_task(new gps_task       (PRIORITY_MEDIUM, &gpsUart));
     scheduler_add_task(new rc_remote_task (PRIORITY_MEDIUM));
 

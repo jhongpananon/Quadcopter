@@ -42,6 +42,10 @@ void EINT3_IRQHandler(void)
     eint3_entry_t *e = gp_eint3_list_head;
 
     /* Get status of PORT0 and PORT2, and store to 64-bit variable */
+    /* XXX This is a bug, rising and falling edge register should not be OR'd
+     * because we cannot independently have rising and falling edge interrupt
+     * for the same pin.
+     */
     status = (LPC_GPIOINT->IO2IntStatR | LPC_GPIOINT->IO2IntStatF);
     status <<= g_port2_offset;
     status |= (LPC_GPIOINT->IO0IntStatR | LPC_GPIOINT->IO0IntStatF);

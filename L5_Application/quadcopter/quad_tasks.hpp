@@ -111,7 +111,7 @@ class rc_remote_task : public scheduler_task
         int8_t mRoll;       ///< Last converted roll input
         int8_t mYaw;        ///< Last converted yaw input
         uint8_t mThrottle;  ///< Last converted throttle input
-        static const uint32_t mscMaxPulseWidthUs = 20 * 1000;
+        static const uint32_t mscMaxPulseWidthUs = 2 * 1000;
 };
 
 

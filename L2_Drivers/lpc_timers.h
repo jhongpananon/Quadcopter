@@ -20,6 +20,7 @@
  * @file
  * @ingroup Drivers
  *
+ * This API provides a means to start a simple timer, and get/set the timer value
  * 20140610: Initial
  */
 #ifndef LPC_TIMERS_H__
@@ -27,7 +28,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <LPC17xx.h>
 #include <stdint.h>
 
 
@@ -42,57 +42,29 @@ typedef enum {
     lpc_timer3,
 } lpc_timer_t;
 
-
-
 /**
  * Enables and starts the timer with the given tick rate
  * @param [in] timer        The timer type
  * @param [in] us_per_tick  The resolution of each tick
+ *
+ * @note The logic requires the CPU to be running at greater than or equal to 1Mhz
+ * @post The timer's clock divider is set to (CPU clock)/1
  */
-static inline void lpc_timer_enable( lpc_timer_t timer, uint32_t us_per_tick)
-{
-    uint32_t timerMemBases[] = { LPC_TIM0_BASE, LPC_TIM1_BASE, LPC_TIM2_BASE, LPC_TIM3_BASE };
-    LPC_TIM_TypeDef *pTimerStruct = (LPC_TIM_TypeDef*) timerMemBases[timer];
-
-    /* Power on the timer, and set the pclk = cpu clock (divide by 1) */
-    switch (timer)
-    {
-        case lpc_timer0: lpc_pconp(pconp_timer0, true); lpc_pclk(pclk_timer0, clkdiv_1); break;
-        case lpc_timer1: lpc_pconp(pconp_timer1, true); lpc_pclk(pclk_timer1, clkdiv_1); break;
-        case lpc_timer2: lpc_pconp(pconp_timer2, true); lpc_pclk(pclk_timer2, clkdiv_1); break;
-        case lpc_timer3: lpc_pconp(pconp_timer3, true); lpc_pclk(pclk_timer3, clkdiv_1); break;
-    }
-
-    /* Enable the timer, and increment on PCLK */
-    pTimerStruct->TCR = 1;
-    pTimerStruct->CTCR = 0;
-
-    /* Set the resolution */
-    pTimerStruct->PR = (sys_get_cpu_clock() * us_per_tick) / (1000*1000);
-}
+void lpc_timer_enable(const lpc_timer_t timer, const uint32_t us_per_tick);
 
 /**
  * Get the value of the timer
  * @param [in] timer    The timer type
+ * @returns             The value of the timer
  */
-static inline uint32_t lpc_timer_value_get( lpc_timer_t timer)
-{
-    uint32_t timerMemBases[] = { LPC_TIM0_BASE, LPC_TIM1_BASE, LPC_TIM2_BASE, LPC_TIM3_BASE };
-    LPC_TIM_TypeDef *pTimerStruct = (LPC_TIM_TypeDef*) timerMemBases[timer];
-    return (pTimerStruct->TC);
-}
+uint32_t lpc_timer_get_value(const lpc_timer_t timer);
 
 /**
  * Set the value of the timer
  * @param [in] timer    The timer type
  * @param [in] value    The value to set.
  */
-static inline void lpc_timer_value_set(lpc_timer_t timer, uint32_t value)
-{
-    uint32_t timerMemBases[] = { LPC_TIM0_BASE, LPC_TIM1_BASE, LPC_TIM2_BASE, LPC_TIM3_BASE };
-    LPC_TIM_TypeDef *pTimerStruct = (LPC_TIM_TypeDef*) timerMemBases[timer];
-    pTimerStruct->TC = 0;
-}
+void lpc_timer_set_value(const lpc_timer_t timer, const uint32_t value);
 
 
 
