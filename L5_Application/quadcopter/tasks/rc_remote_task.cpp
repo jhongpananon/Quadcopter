@@ -166,8 +166,10 @@ int8_t rc_remote_task::getNormalizedValue(const uint32_t &pulseWidthUs)
 {
     int16_t normalizedValue = 0;
 
-    /* Normalize to 0-200 range, then convert to -100 -> +100 range */
+    /* Normalize to 0-200 range */
     normalizedValue = (200 * pulseWidthUs) / mscMaxPulseWidthUs;
+
+    /* Convert to -100 -> +100 */
     normalizedValue -= 100;
 
     return (int8_t) normalizedValue;
@@ -178,6 +180,7 @@ bool rc_remote_task::run(void *p)
     /* XXX This data should be set on the Singleton class */
     FlightController f;
     const TickType_t timeout = OS_MS(1000);
+    const uint8_t noiseMicroSeconds = 10;
 
     rc_receiver_t channelData;
 
@@ -190,6 +193,11 @@ bool rc_remote_task::run(void *p)
     /* Cap the maximum value */
     if (channelData.pulse_time_us > mscMaxPulseWidthUs) {
         channelData.pulse_time_us = mscMaxPulseWidthUs;
+    }
+
+    /* Filter out the "noise", or the computation needed for us to measure the pulse width */
+    if (channelData.pulse_time_us < noiseMicroSeconds) {
+        channelData.pulse_time_us = 0;
     }
 
     /* Decode all the inputs */
