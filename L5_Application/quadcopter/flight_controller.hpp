@@ -37,14 +37,17 @@ class FlightController
         /**
          * @{ API to set flight parameters
          *
-         * @param[in] pitch Pitch value from -100 -> +100
-         * @param[in] roll  Roll value from -100 -> +100
-         * @param[in] yaw   Yaw value from -100 -> +100
+         * @param[in] pitch     Pitch value from -100 -> +100
+         * @param[in] roll      Roll value from -100 -> +100
+         * @param[in] yaw       Yaw value from -100 -> +100
+         * @parma[in] throttle  The throttle value from 0 -> +100
          *
          * TODO : This should be a hidden interface, not everyone should be allowed to do this
          */
-        void setFlightParameters(int8_t pitch, int8_t roll, int8_t yaw);
-        void setLift(uint8_t percentage);
+        void setFlightParameters(int8_t pitch, int8_t roll, int8_t yaw, uint8_t throttle)
+        {
+
+        }
         /** @} */
 
     protected:

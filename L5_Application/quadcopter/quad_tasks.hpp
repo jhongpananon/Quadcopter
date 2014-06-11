@@ -103,7 +103,15 @@ class rc_remote_task : public scheduler_task
 
     protected:
     private:
+        int8_t getNormalizedValue(const uint32_t &pulseWidthUs);
+
         rc_remote_task(); ///< Disallow this constructor (no code is defined)
+
+        int8_t mPitch;      ///< Last converted pitch input
+        int8_t mRoll;       ///< Last converted roll input
+        int8_t mYaw;        ///< Last converted yaw input
+        uint8_t mThrottle;  ///< Last converted throttle input
+        static const uint32_t mscMaxPulseWidthUs = 20 * 1000;
 };
 
 

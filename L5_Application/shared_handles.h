@@ -39,7 +39,7 @@ enum {
 
     /* Quadcopter shared IDs */
     shared_SensorDataReadySemaphore,    ///< Semaphore given when all IMU values are obtained
-    shared_RcReceiverSemaphore,         ///< Semaphore given when RC receiver interrupt is triggered
+    shared_RcReceiverQueue,             ///< Queue of RC receiver timings from ISR
 };
 
 

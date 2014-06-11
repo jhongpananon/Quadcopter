@@ -75,9 +75,12 @@ typedef enum
 
         /* Suggested interrupt priorities for popular peripherals */
         IP_Default = 20,          /**< Default priority of most interrupts */
+
+        IP_eint = IP_Default - 9, /**< Need high priority EINT for flight controller */
+
         IP_ssp  = IP_Default - 5, /**< SSP can be super fast, so needs higher priority */
         IP_can  = IP_Default - 4, /**< CAN can be fast, so use higher priority than other communication BUSes */
-        IP_eint = IP_Default - 3, /**< User probably needs fast EINT than UART or I2C */
+
         IP_i2c  = IP_Default - 2, /**< I2C set to higher priority than UART */
         IP_uart = IP_Default - 1, /**< UART set to higher priority than default */
 

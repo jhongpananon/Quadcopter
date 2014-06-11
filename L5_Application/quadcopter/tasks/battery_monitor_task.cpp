@@ -101,7 +101,7 @@ bool battery_monitor_task::run(void *p)
     /* Set the value to the quadcopter class */
     const uint8_t percentUint = (uint8_t) percent;
 
-    /* XXX This is just done for the example, we should set it to the real quadcopter class */
+    /* XXX  This data should be set on the Singleton class */
     Quadcopter q;
     q.setBatteryPercentage(percentUint);
 
