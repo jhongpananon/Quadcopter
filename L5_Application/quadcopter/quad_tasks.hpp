@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "scheduler_task.hpp"
+#include "quadcopter.hpp"
 
 #include "sampler.hpp"
 #include "uart_dev.hpp"
@@ -107,10 +108,7 @@ class rc_remote_task : public scheduler_task
 
         rc_remote_task(); ///< Disallow this constructor (no code is defined)
 
-        int8_t mPitch;      ///< Last converted pitch input
-        int8_t mRoll;       ///< Last converted roll input
-        int8_t mYaw;        ///< Last converted yaw input
-        uint8_t mThrottle;  ///< Last converted throttle input
+        flight_params_t mFlightParams;  ///< The flight parameters being decoded from RC receiver
         static const uint32_t mscMaxPulseWidthUs = 2 * 1000;
 };
 
@@ -135,6 +133,7 @@ class battery_monitor_task : public scheduler_task
         float mLowestVoltage;         ///< Lowest battery voltage
         float mHighestVoltage;        ///< Highest battery voltage
         float mVoltageDeltaForLog;    ///< Data is logged if previous voltage delta is larger than this
+        float mPreviousVoltage;       ///< Previous voltage sensed when data was logged
 
         /**
          * We take multiple ADC samples before we take the average.

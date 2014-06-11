@@ -1,7 +1,9 @@
 /**
  * @file
  */
+#include "quadcopter.hpp"
 #include "quad_tasks.hpp"
+
 #include "file_logger.h"
 #include "wireless.h"
 
@@ -38,8 +40,7 @@ bool kill_switch_task::run(void *p)
 
     if (wireless_get_rx_pkt(&pkt, portMAX_DELAY))
     {
-        /* TODO: If any wireless packet (over nordic) comes in just kill the quadcopter */
-
+        Quadcopter::getInstance().engageKillSwitch();
         LOG_WARN("Kill switch engaged!");
     }
 

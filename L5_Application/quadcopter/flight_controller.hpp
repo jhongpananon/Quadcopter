@@ -9,6 +9,16 @@
 
 
 /**
+ * Common structure used for pitch, roll, yaw, and throttle values
+ */
+typedef struct {
+    int8_t pitch;     ///< Pitch value
+    int8_t roll;      ///< Roll value
+    int8_t yaw;       ///< Yaw value
+    uint8_t throttle; ///< Throttle value
+} flight_params_t;
+
+/**
  * This is the flight controller class.
  * This allows the user to set the raw sensor values, process them, and apply
  * the user input to be able to fly the Quadcopter.
@@ -37,16 +47,18 @@ class FlightController
         /**
          * @{ API to set flight parameters
          *
-         * @param[in] pitch     Pitch value from -100 -> +100
-         * @param[in] roll      Roll value from -100 -> +100
-         * @param[in] yaw       Yaw value from -100 -> +100
-         * @parma[in] throttle  The throttle value from 0 -> +100
+         * @param [in] params   The flight parameters with these members:
+         *                          - pitch     Pitch value from -100 -> +100
+         *                          - roll      Roll value from -100 -> +100
+         *                          - yaw       Yaw value from -100 -> +100
+         *                          - throttle  The throttle value from 0 -> +100
          *
          * TODO : This should be a hidden interface, not everyone should be allowed to do this
+         * because only Quadcopter should set the input parameters based on its logic.
          */
-        void setFlightParameters(int8_t pitch, int8_t roll, int8_t yaw, uint8_t throttle)
+        void setFlightParameters(const flight_params_t& params)
         {
-
+            mInputFlightParams = params;
         }
         /** @} */
 
@@ -55,10 +67,7 @@ class FlightController
         ThreeAxisSensor mAccelerationSensor;    ///< Acceleration sensor data
         ThreeAxisSensor mGyroSensor;            ///< Gyroscope sensor data
         ThreeAxisSensor mMagnoSensor;           ///< Magnetometer sensor data
-
-        int8_t mInputPitch;     ///< User input for pitch
-        int8_t mInputRoll;      ///< User input for roll
-        int8_t mInputYaw;       ///< User input for yaw
+        flight_params_t mInputFlightParams;     ///< Input flight parameters
 };
 
 

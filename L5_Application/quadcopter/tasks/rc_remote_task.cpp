@@ -1,6 +1,12 @@
+/**
+ *
+ */
+#include <string.h>
+
 #include "FreeRTOS.h"
 #include "queue.h"
 
+#include "quadcopter.hpp"
 #include "quad_tasks.hpp"
 #include "lpc_timers.h"
 #include "eint.h"
@@ -130,10 +136,11 @@ static void ch6_falling_isr(void) { channel_n_falling_edge(rc_chan6);          }
 
 
 rc_remote_task::rc_remote_task(const uint8_t priority) :
-    scheduler_task("rcrx", RC_RX_TASK_STACK_BYTES, priority),
-    mPitch(0), mRoll(0), mYaw(0), mThrottle(0)
+    scheduler_task("rcrx", RC_RX_TASK_STACK_BYTES, priority)
 {
     /* Use init() for memory allocation */
+    memset(&mFlightParams, sizeof(mFlightParams), 0);
+
 }
 
 bool rc_remote_task::init(void)
@@ -191,23 +198,20 @@ int8_t rc_remote_task::getNormalizedValue(const uint32_t &pulseWidthUs)
 
 bool rc_remote_task::run(void *p)
 {
-    /* XXX This data should be set on the Singleton class */
-    FlightController f;
     const TickType_t timeout = OS_MS(1000);
     const uint8_t noiseMicroSeconds = 10;
-
+    const bool healthy = true;
     rc_receiver_pulse_t channelData;
 
     /* Wait for queue data to be sent */
     if (!xQueueReceive(getSharedObject(shared_RcReceiverQueue), &channelData, timeout)) {
         LOG_ERROR("RC receiver failed!");
 
-        /* TODO Tell the Quadcopter class that the RC receiver has failed.
-         * Set a flag on the Quadcopter class to indicate that the RC receiver has failed.
-         * Maybe this is a time to enter autonomous mode, or land safely.
-         */
+        /* Tell the Quadcopter class that the RC receiver has failed */
+        const bool healthy = false;
+        Quadcopter::getInstance().updateRcReceiverStatus(healthy);
 
-        ///< TODO Do not return false to disable this task after updating quadcopter status above
+        /* XXX Returning false to suspend the task until RC receiver is attached */
         return false;
     }
 
@@ -225,29 +229,27 @@ bool rc_remote_task::run(void *p)
     switch (channelData.channel)
     {
         case rc_chan1_pitch:
-            mPitch = getNormalizedValue(channelData.pulse_time_us);
+            mFlightParams.pitch = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan2_roll:
-            mRoll = getNormalizedValue(channelData.pulse_time_us);
+            mFlightParams.roll = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan3_yaw:
-            mYaw = getNormalizedValue(channelData.pulse_time_us);
+            mFlightParams.yaw = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan4_throttle:
             /* Convert normalized data from -100->+100 to 0->100 */
-            mThrottle = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
+            mFlightParams.yaw = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
 
             /* Since we have all the inputs, set them all to the flight controller */
-            f.setFlightParameters(mPitch, mRoll, mYaw, mThrottle);
+            Quadcopter::getInstance().updateRcReceiverStatus(healthy);
+            Quadcopter::getInstance().setFlightParameters(mFlightParams);
 
             /* Reset the parameters so we don't use stale values next time */
-            mPitch = 0;
-            mRoll = 0;
-            mYaw = 0;
-            mThrottle = 0;
+            memset(&mFlightParams, sizeof(mFlightParams), 0);
 
             break;
 

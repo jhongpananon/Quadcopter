@@ -88,10 +88,7 @@ bool gps_task::run(void *p)
             /* Set the GPS data on the Quadcopter class */
             const float latitudeFloat = atof(latitude);
             const float longitudeFloat = atof(longitude);
-
-            /* XXX  This data should be set on the Singleton class */
-            Quadcopter q;
-            q.setGps(latitudeFloat, longitudeFloat);
+            Quadcopter::getInstance().setGps(latitudeFloat, longitudeFloat);
         }
     }
 

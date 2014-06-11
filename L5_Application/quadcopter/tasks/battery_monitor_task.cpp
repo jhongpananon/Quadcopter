@@ -31,7 +31,9 @@ battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     mLowestVoltage(1000),       /* A really high voltage, it will be reset upon actual voltage sensed */
     mHighestVoltage(-1),        /* A really low voltage, it will be reset upon actual voltage sensed */
     mVoltageDeltaForLog(0.10),  /* Default configuration to log data if voltage changes */
+    mPreviousVoltage(0),
     mAdcSamples(mNumAdcSamplesBeforeVoltageUpdate)
+
 {
     /* Use init() for memory allocation */
 }
@@ -101,19 +103,18 @@ bool battery_monitor_task::run(void *p)
     /* Set the value to the quadcopter class */
     const uint8_t percentUint = (uint8_t) percent;
 
-    /* XXX  This data should be set on the Singleton class */
-    Quadcopter q;
-    q.setBatteryPercentage(percentUint);
+    /* Set the value to the Quadcopter */
+    Quadcopter::getInstance().setBatteryPercentage(percentUint);
 
     /* Only log data if there is enough delta */
-    static float previousVoltage = voltage;
-    if ( fabs(voltage - previousVoltage) > mVoltageDeltaForLog)
+    if ( fabs(voltage - mPreviousVoltage) > mVoltageDeltaForLog)
     {
+        mPreviousVoltage = voltage;
+
         /* use commas to be in-line with CSV format to easily plot in excel */
         LOG_INFO_SIMPLE("Battery volts, %.2f, estimated charge %%, %u, (%.2f/%.2f)",
                         voltage, percentUint, mLowestVoltage, mHighestVoltage);
     }
-    previousVoltage = voltage;
 
     return true;
 }

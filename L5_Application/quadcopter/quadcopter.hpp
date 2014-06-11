@@ -1,6 +1,11 @@
+/**
+ *
+ */
 #ifndef QUADCOPTER_HPP_
 #define QUADCOPTER_HPP_
 #include <stdint.h>
+#include "flight_controller.hpp"
+#include "singleton_template.hpp"
 
 
 
@@ -9,7 +14,7 @@
  *
  * This is the Quadcopter's "manager"
  */
-class Quadcopter
+class Quadcopter : public SingletonTemplate<Quadcopter>
 {
     /* Public types */
     public:
@@ -19,8 +24,16 @@ class Quadcopter
             mode_manual,
         } quadcopter_mode_t;
 
+    /* Public members */
+        FlightController mFlightController;
+
     /* Public API */
     public:
+        void setFlightParameters(const flight_params_t& params)
+        {
+            mRequestedFlightParams = params;
+        }
+
         /**
          * Sets the GPS coordinates
          * @param [in] longitude
@@ -53,10 +66,31 @@ class Quadcopter
             }
         }
 
+        void engageKillSwitch(void)
+        {
+
+        }
+
+        void updateRcReceiverStatus(bool isHealthy)
+        {
+            mRcReceiverIsHealthy = isHealthy;
+        }
+
     protected:
     private:
-        quadcopter_mode_t mQuadcopterMode;  ///< Quadcopter's mode
-        uint8_t mBatteryPercentage;         ///< Quadcopter's battery voltage
+        /// Private constructor for singleton class
+        Quadcopter() : mQuadcopterMode(mode_manual), mBatteryPercentage(0), mRcReceiverIsHealthy(false)
+        {
+
+        }
+
+        ///< Friend class used for Singleton Template
+        friend class SingletonTemplate<Quadcopter>;
+
+        quadcopter_mode_t mQuadcopterMode;      ///< Quadcopter's mode
+        uint8_t mBatteryPercentage;             ///< Quadcopter's battery voltage
+        bool mRcReceiverIsHealthy;              ///< If valid input is being given by RC receiver remote
+        flight_params_t mRequestedFlightParams; ///< Flight parameters being requested
 };
 
 

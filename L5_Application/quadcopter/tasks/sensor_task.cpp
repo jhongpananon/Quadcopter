@@ -67,11 +67,10 @@ bool sensor_task::run(void *p)
            mMagno.setAll(0, 0, 0);
 
     /* Send the data to the flight controller class */
-    /* TODO: Send this to the singleton instance, this is done just to show an example */
-    FlightController f;
-    f.setRawAcceleration(mAcceleration);
-    f.setRawGyro(mGyro);
-    f.setRawMagno(mMagno);
+    Quadcopter &q = Quadcopter::getInstance();
+    q.mFlightController.setRawAcceleration(mAcceleration);
+    q.mFlightController.setRawGyro(mGyro);
+    q.mFlightController.setRawMagno(mMagno);
 
     /* Now let the processing task process the values and run its algorithms */
     success = xSemaphoreGive(getSharedObject(shared_SensorDataReadySemaphore));
