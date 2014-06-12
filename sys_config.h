@@ -40,7 +40,7 @@ extern "C" {
 #define WIRELESS_NODE_ADDR              106    ///< Any value from 1-254
 #define WIRELESS_CHANNEL_NUM            2499   ///< 2402 - 2500 to avoid collisions among 2+ mesh networks
 #define WIRELESS_AIR_DATARATE_KBPS      2000   ///< Air data rate, can only be 250, 1000, or 2000 kbps
-#define WIRELESS_NODE_NAME             "node"  ///< Wireless node name
+#define WIRELESS_NODE_NAME             "quad"  ///< Wireless node name
 #define WIRELESS_RX_QUEUE_SIZE          3      ///< Number of payloads we can queue
 #define WIRELESS_NODE_ADDR_FILE         "naddr"/**< If this file is present, node address will be set by
                                                      reading ASCII data from this file */
@@ -99,7 +99,7 @@ unsigned int sys_get_cpu_clock();
 #define EXTERNAL_CLOCK      (12 * 1000 * 1000UL)    ///< Change according to your board specification
 #define RTC_CLOCK           (32768UL)               ///< Do not change, this is the typical RTC crystal value
 
-#define DESIRED_CPU_CLOCK	(48 * 1000 * 1000UL)    ///< Define the CPU speed you desire, must be between 1-100Mhz
+#define DESIRED_CPU_CLOCK	(96 * 1000 * 1000UL)    ///< Define the CPU speed you desire, must be between 1-100Mhz
 #define FALLBACK_CPU_CLOCK  (24 * 1000 * 1000UL)    ///< Do not change.  This is the fall-back CPU speed if DESIRED_CPU_CLOCK cannot be attained
 
 #define TIMER0_US_PER_TICK  (10)                    ///< Microseconds per tick for Timer0 that is used by FreeRTOS run-time stats

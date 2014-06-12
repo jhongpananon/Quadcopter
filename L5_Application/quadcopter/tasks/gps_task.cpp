@@ -46,7 +46,7 @@ bool gps_task::run(void *p)
     char buffer[maxGpsStringLen] = { 0 };
 
     // Assuming 1Hz GPS, we should receive the data within 1100ms
-    const uint32_t gpsTimeoutMs = 1100;
+    const uint32_t gpsTimeoutMs = 1000;
 
     // If GPS fails, or is un-attached, we don't want to log the error every second
     static uint32_t periodicLog = 0;
@@ -62,9 +62,9 @@ bool gps_task::run(void *p)
         /* Parse the GPS string */
         char *savePtr = NULL;
         const char *split = ",";
-        const char *stringId      = strtok_r(&buffer[0], split, &savePtr);
+        const char *stringId = strtok_r(&buffer[0], split, &savePtr);
 
-        if (0 == strcmp(stringId, "$GPGGA"))
+        if (stringId == strstr(stringId, "$GPGGA"))
         {
             const char *utcOfPosition = strtok_r(NULL, split, &savePtr);
             const char *latitude      = strtok_r(NULL, split, &savePtr);
@@ -86,9 +86,10 @@ bool gps_task::run(void *p)
             (void) altitude;
 
             /* Set the GPS data on the Quadcopter class */
-            const float latitudeFloat = atof(latitude);
-            const float longitudeFloat = atof(longitude);
-            Quadcopter::getInstance().setGps(latitudeFloat, longitudeFloat);
+            gpsData_t gpsData;
+            gpsData.latitude = atof(latitude);
+            gpsData.longitude = atof(longitude);
+            Quadcopter::getInstance().setCurrentGpsCoordinates(gpsData);
         }
     }
 

@@ -56,8 +56,8 @@ static inline void handle_eint_list(uint32_t *isr_bits_ptr, volatile uint32_t *i
     while (e && *isr_bits_ptr) {
         /* If we find the pin, make the callback and clear the interrupt source*/
         if (e->pin_mask & *isr_bits_ptr) {
-            *isr_bits_ptr &= ~(e->pin_mask);
             (e->callback)();
+            *isr_bits_ptr &= ~(e->pin_mask);
             *int_clr_ptr = e->pin_mask;
         }
         e = e->next;

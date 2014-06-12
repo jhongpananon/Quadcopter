@@ -50,8 +50,8 @@ extern "C" {
  * there is data in the buffer, we will write it to the file after this time.
  */
 #define FILE_LOGGER_BUFFER_SIZE      (2 * 512)   ///< Recommend multiples of 512
-#define FILE_LOGGER_MSG_BUFFERS      6           ///< Number of buffers
-#define FILE_LOGGER_MSG_MAX_LEN      150         ///< Max length of a log message
+#define FILE_LOGGER_MSG_BUFFERS      10          ///< Number of buffers
+#define FILE_LOGGER_MSG_MAX_LEN      140         ///< Max length of a log message
 #define FILE_LOGGER_FILENAME         "log.csv"   ///< Destination filename
 #define FILE_LOGGER_STACK_SIZE       (1200 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
 #define FILE_LOGGER_FLUSH_TIMEOUT    (1 * 60)    ///< Logs are flushed after this time

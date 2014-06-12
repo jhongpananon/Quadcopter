@@ -8,7 +8,13 @@
 #include "io.hpp"
 
 
-
+/**
+ * XXX Not happy with this design, several questions stand:
+ *      - Who owns the sensors?  FlightController?  Sensor task?
+ *      - Do we really need "ThreeAxisSensor" ?
+ *      - Do we really need sensor task?  Can't it be combined with quadcopter class?
+ *
+ */
 /// Define the stack size this task is estimated to use
 #define SENSOR_TASK_STACK_BYTES     (3 * 512)
 
@@ -23,6 +29,7 @@ sensor_task::sensor_task(const uint8_t priority) :
 bool sensor_task::init(void)
 {
     bool success = true;
+    FlightController &f = Quadcopter::getInstance().mFlightController;
     SemaphoreHandle_t sensorDataReadySem = xSemaphoreCreateBinary();
 
     if (success) {
@@ -35,9 +42,9 @@ bool sensor_task::init(void)
 
     /* TODO: Set min/max according to the particular sensor */
     if (success) {
-        mAcceleration.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-                mGyro.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-               mMagno.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+        f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+                f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+               f.mMagnoSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
     }
 
     // Do not update task statistics (stack usage) too frequently
@@ -61,16 +68,11 @@ bool sensor_task::run(void *p)
     y = AS.getY();
     z = AS.getZ();
 
-    /* Set the raw data */
-    mAcceleration.setAll(x, y, z);
-            mGyro.setAll(0, 0, 0);
-           mMagno.setAll(0, 0, 0);
-
     /* Send the data to the flight controller class */
     Quadcopter &q = Quadcopter::getInstance();
-    q.mFlightController.setRawAcceleration(mAcceleration);
-    q.mFlightController.setRawGyro(mGyro);
-    q.mFlightController.setRawMagno(mMagno);
+    q.mFlightController.mAccelerationSensor.setAll(x, y, z);
+    q.mFlightController.mGyroSensor.setAll(0, 0, 0);
+    q.mFlightController.mMagnoSensor.setAll(0, 0, 0);
 
     /* Now let the processing task process the values and run its algorithms */
     success = xSemaphoreGive(getSharedObject(shared_SensorDataReadySemaphore));

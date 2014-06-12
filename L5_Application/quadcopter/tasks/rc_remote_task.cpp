@@ -200,7 +200,6 @@ bool rc_remote_task::run(void *p)
 {
     const TickType_t timeout = OS_MS(1000);
     const uint8_t noiseMicroSeconds = 10;
-    const bool healthy = true;
     rc_receiver_pulse_t channelData;
 
     /* Wait for queue data to be sent */
@@ -209,7 +208,7 @@ bool rc_remote_task::run(void *p)
 
         /* Tell the Quadcopter class that the RC receiver has failed */
         const bool healthy = false;
-        Quadcopter::getInstance().updateRcReceiverStatus(healthy);
+        Quadcopter::getInstance().setRcReceiverStatus(healthy);
 
         /* XXX Returning false to suspend the task until RC receiver is attached */
         return false;
@@ -241,17 +240,20 @@ bool rc_remote_task::run(void *p)
             break;
 
         case rc_chan4_throttle:
+        {
             /* Convert normalized data from -100->+100 to 0->100 */
-            mFlightParams.yaw = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
+            mFlightParams.throttle = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
 
             /* Since we have all the inputs, set them all to the flight controller */
-            Quadcopter::getInstance().updateRcReceiverStatus(healthy);
+            const bool healthy = true;
+            Quadcopter::getInstance().setRcReceiverStatus(healthy);
             Quadcopter::getInstance().setFlightParameters(mFlightParams);
 
             /* Reset the parameters so we don't use stale values next time */
             memset(&mFlightParams, sizeof(mFlightParams), 0);
 
             break;
+        }
 
         case rc_chan5:
         case rc_chan6:

@@ -41,7 +41,7 @@ bool kill_switch_task::run(void *p)
     if (wireless_get_rx_pkt(&pkt, portMAX_DELAY))
     {
         Quadcopter::getInstance().engageKillSwitch();
-        LOG_WARN("Kill switch engaged!");
+        LOG_WARN("Kill switch issued");
     }
 
     return true;

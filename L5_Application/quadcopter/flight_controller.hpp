@@ -16,7 +16,7 @@ typedef struct {
     int8_t roll;      ///< Roll value
     int8_t yaw;       ///< Yaw value
     uint8_t throttle; ///< Throttle value
-} flight_params_t;
+} flightParams_t;
 
 /**
  * This is the flight controller class.
@@ -27,22 +27,20 @@ class FlightController
 {
     public:
         /**
-         * @{ API to set the raw sensor data values
+         * @{ Public sensors of the flight controller
          */
-        void setRawAcceleration(const ThreeAxisSensor& data) { mAccelerationSensor = data; }
-        void setRawGyro(const ThreeAxisSensor& data)         { mGyroSensor = data; }
-        void setRawMagno(const ThreeAxisSensor& data)        { mMagnoSensor = data; }
+        ThreeAxisSensor mAccelerationSensor;    ///< Acceleration sensor data
+        ThreeAxisSensor mGyroSensor;            ///< Gyroscope sensor data
+        ThreeAxisSensor mMagnoSensor;           ///< Magnetometer sensor data
         /** @} */
 
         /**
-         * Runs a filter on the raw inputs supplied to the sensors
-         * XXX: Maybe a first stage "smoothing" filter here?
-         *      This should call filters at ThreeAxisSensor class
+         * Runs filters on the sensor inputs
          */
-        void runRawInputFilter(void);
+        void runSensorInputFilters(void)
+        {
 
-        void runPID(void);
-        void runKalmanFilter(void);
+        }
 
         /**
          * @{ API to set flight parameters
@@ -56,7 +54,7 @@ class FlightController
          * TODO : This should be a hidden interface, not everyone should be allowed to do this
          * because only Quadcopter should set the input parameters based on its logic.
          */
-        void setFlightParameters(const flight_params_t& params)
+        void setFlightParameters(const flightParams_t& params)
         {
             mInputFlightParams = params;
         }
@@ -64,10 +62,7 @@ class FlightController
 
     protected:
     private:
-        ThreeAxisSensor mAccelerationSensor;    ///< Acceleration sensor data
-        ThreeAxisSensor mGyroSensor;            ///< Gyroscope sensor data
-        ThreeAxisSensor mMagnoSensor;           ///< Magnetometer sensor data
-        flight_params_t mInputFlightParams;     ///< Input flight parameters
+        flightParams_t mInputFlightParams;     ///< Input flight parameters
 };
 
 

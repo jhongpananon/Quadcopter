@@ -28,11 +28,7 @@ class sensor_task : public scheduler_task
 
     protected:
     private:
-        sensor_task(); ///< Disallow this constructor (no code is defined)
-
-        ThreeAxisSensor mAcceleration;  ///< Acceleration sensor data
-        ThreeAxisSensor mGyro;          ///< Gyroscope sensor data
-        ThreeAxisSensor mMagno;         ///< Magnetometer sensor data
+        sensor_task(); ///< Disallow default constructor (no code is defined)
 };
 
 
@@ -49,11 +45,18 @@ class quadcopter_task : public scheduler_task
     public:
         quadcopter_task(const uint8_t priority);
         bool init(void);
+        bool taskEntry(void);
         bool run(void *p);
 
     protected:
     private:
-        quadcopter_task(); ///< Disallow this constructor (no code is defined)
+        quadcopter_task(); ///< Disallow default constructor (no code is defined)
+
+        /**
+         * The trigger point of "low" battery.
+         * This is saved on the disk, and set on the Quadcopter class
+         */
+        uint8_t mLowBatteryTriggerPercent;
 };
 
 
@@ -76,12 +79,13 @@ class gps_task : public scheduler_task
          * @note pGpsUart's UART should already be initialized at the GPS baudrate
          */
         gps_task(const uint8_t priority, UartDev *pGpsUart);
+
         bool init(void);
         bool run(void *p);
 
     protected:
     private:
-        gps_task(); ///< Disallow this constructor (no code is defined)
+        gps_task(); ///< Disallow default constructor (no code is defined)
 
         UartDev *mpGpsUart;     ///< The UART used for the GPS
 };
@@ -104,11 +108,20 @@ class rc_remote_task : public scheduler_task
 
     protected:
     private:
+        rc_remote_task(); ///< Disallow default constructor (no code is defined)
+
+        /**
+         * Gets the normalized value between -100 -> +100 based on the input pulse width.
+         * @note mscMaxPulseWidthUs is used to calculate the range.
+         *
+         * @param [in] pulseWidthUs     The pulse width of the RC channel in microseconds
+         */
         int8_t getNormalizedValue(const uint32_t &pulseWidthUs);
 
-        rc_remote_task(); ///< Disallow this constructor (no code is defined)
+        /// The flight parameters being decoded from RC receiver
+        flightParams_t mFlightParams;
 
-        flight_params_t mFlightParams;  ///< The flight parameters being decoded from RC receiver
+        /// The maximum pulse width of a single channel in microseconds
         static const uint32_t mscMaxPulseWidthUs = 2 * 1000;
 };
 
@@ -129,7 +142,7 @@ class battery_monitor_task : public scheduler_task
 
     protected:
     private:
-        battery_monitor_task();       ///< Disallow this constructor (no code is defined)
+        battery_monitor_task();       ///< Disallow default constructor (no code is defined)
         float mLowestVoltage;         ///< Lowest battery voltage
         float mHighestVoltage;        ///< Highest battery voltage
         float mVoltageDeltaForLog;    ///< Data is logged if previous voltage delta is larger than this
@@ -168,5 +181,5 @@ class kill_switch_task : public scheduler_task
 
     protected:
     private:
-        kill_switch_task(); ///< Disallow this constructor (no code is defined)
+        kill_switch_task(); ///< Disallow default constructor (no code is defined)
 };

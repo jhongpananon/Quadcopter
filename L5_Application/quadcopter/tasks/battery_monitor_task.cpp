@@ -49,9 +49,9 @@ bool battery_monitor_task::init(void)
     /* Register disk variables */
     if (success) {
         tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
-        TLM_REG_VAR(disk, mLowestVoltage, tlm_float);
-        TLM_REG_VAR(disk, mHighestVoltage, tlm_float);
-        TLM_REG_VAR(disk, mVoltageDeltaForLog, tlm_float);
+        if (success) success = TLM_REG_VAR(disk, mLowestVoltage, tlm_float);
+        if (success) success = TLM_REG_VAR(disk, mHighestVoltage, tlm_float);
+        if (success) success = TLM_REG_VAR(disk, mVoltageDeltaForLog, tlm_float);
     }
 
     // Do not update task statistics (stack usage) too frequently
