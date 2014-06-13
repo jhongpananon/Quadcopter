@@ -142,11 +142,19 @@ class battery_monitor_task : public scheduler_task
 
     protected:
     private:
-        battery_monitor_task();       ///< Disallow default constructor (no code is defined)
-        float mLowestVoltage;         ///< Lowest battery voltage
-        float mHighestVoltage;        ///< Highest battery voltage
-        float mVoltageDeltaForLog;    ///< Data is logged if previous voltage delta is larger than this
-        float mPreviousVoltage;       ///< Previous voltage sensed when data was logged
+        battery_monitor_task();         ///< Disallow default constructor (no code is defined)
+        int32_t mLowestMilliVolts;      ///< Lowest battery voltage
+        int32_t mHighestMilliVolts;     ///< Highest battery voltage
+        int32_t mMilliVoltDeltaToLog;   ///< Data is logged if previous voltage delta is larger than this
+        int32_t mPrevMilliVolts;        ///< Previous voltage sensed when data was logged
+
+        /**
+         * When the system is "learning", it needs to know a large enough delta for the
+         * battery percentage to be determined correctly.  For example, we need to know
+         * that a battery has been through 1.2v - 1.6v, and only then we can compute a
+         * valid percentage of the battery.
+         */
+        int32_t mMinimumDeltaMilliVoltsForValidPercent;
 
         /**
          * We take multiple ADC samples before we take the average.

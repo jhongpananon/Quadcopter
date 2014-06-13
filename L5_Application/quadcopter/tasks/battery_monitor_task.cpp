@@ -1,7 +1,7 @@
 /**
  * @file
  */
-#include <math.h>
+#include <stdlib.h>
 
 #include "quad_tasks.hpp"
 #include "quadcopter.hpp"
@@ -28,12 +28,13 @@
 
 battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     scheduler_task("battery", BATTERY_TASK_STACK_BYTES, priority),
-    mLowestVoltage(1000),       /* A really high voltage, it will be reset upon actual voltage sensed */
-    mHighestVoltage(-1),        /* A really low voltage, it will be reset upon actual voltage sensed */
-    mVoltageDeltaForLog(0.10),  /* Default configuration to log data if voltage changes */
-    mPreviousVoltage(0),
+    mLowestMilliVolts(4 * 1000),      /* A really high voltage, it will be reset upon actual voltage sensed */
+    mHighestMilliVolts(-1 * 1000),    /* A really low voltage, it will be reset upon actual voltage sensed */
+    mMilliVoltDeltaToLog(0.1 * 1000), /* Default configuration to log data if voltage changes */
+    mPrevMilliVolts(0),
+    /* We need to see battery go through at least 1 volt of delta to determine its charge */
+    mMinimumDeltaMilliVoltsForValidPercent(0.5 * 1000),
     mAdcSamples(mNumAdcSamplesBeforeVoltageUpdate)
-
 {
     /* Use init() for memory allocation */
 }
@@ -49,9 +50,10 @@ bool battery_monitor_task::init(void)
     /* Register disk variables */
     if (success) {
         tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
-        if (success) success = TLM_REG_VAR(disk, mLowestVoltage, tlm_float);
-        if (success) success = TLM_REG_VAR(disk, mHighestVoltage, tlm_float);
-        if (success) success = TLM_REG_VAR(disk, mVoltageDeltaForLog, tlm_float);
+        if (success) success = TLM_REG_VAR(disk, mLowestMilliVolts, tlm_uint);
+        if (success) success = TLM_REG_VAR(disk, mHighestMilliVolts, tlm_uint);
+        if (success) success = TLM_REG_VAR(disk, mMilliVoltDeltaToLog, tlm_uint);
+        if (success) success = TLM_REG_VAR(disk, mMinimumDeltaMilliVoltsForValidPercent, tlm_uint);
     }
 
     // Do not update task statistics (stack usage) too frequently
@@ -82,38 +84,44 @@ bool battery_monitor_task::run(void *p)
     /* Clear the samples for next update */
     mAdcSamples.clear();
 
-    /* Convert ADC to voltage value */
-    const uint32_t adcConverterBitResolution = 12;
-    const float voltsPerAdcStep = 3.3f / (1 << adcConverterBitResolution);
-    float voltage = (adcValue * voltsPerAdcStep) * EXTERNAL_VOLTAGE_DIVIDER;
+    /* Convert ADC to voltage value without using floats
+     * 12-bit resolution is in micro-volts, so use that first, then convert to millivolts
+     */
+    const int32_t adcConverterBitResolution = 12;
+    const float adcReferenceVoltage = 3.3f;
+    const int32_t microVoltsPerAdcStep = (adcReferenceVoltage * 1000 * 1000) / (1 << adcConverterBitResolution);
+    const int32_t milliVolts = microVoltsPerAdcStep * (adcValue * EXTERNAL_VOLTAGE_DIVIDER) / 1000;
 
     /* Update the high/low voltages */
-    if (voltage > mHighestVoltage) {
-        mHighestVoltage = voltage;
+    if (milliVolts > mHighestMilliVolts) {
+        mHighestMilliVolts = milliVolts;
     }
-    if (voltage < mLowestVoltage) {
-        mLowestVoltage = voltage;
+    if (milliVolts < mLowestMilliVolts) {
+        mLowestMilliVolts = milliVolts;
     }
 
     /* Estimate the percentage of charge based on the voltage right now
-     * We add 0.01f to avoid divide by zero.
+     * We add 1 to avoid divide by zero.
      */
-    const float percent = voltage / (0.01f + mHighestVoltage - mLowestVoltage) * 100.0f;
+    uint32_t percent = ((milliVolts - mLowestMilliVolts) * 100) / (1 + mHighestMilliVolts - mLowestMilliVolts);
 
-    /* Set the value to the quadcopter class */
-    const uint8_t percentUint = (uint8_t) percent;
-
-    /* Set the value to the Quadcopter */
-    Quadcopter::getInstance().setBatteryPercentage(percentUint);
+    /* Set the value to the Quadcopter if we think we've determined a valid battery voltage.
+     * If we haven't "learned" about the battery pack, we assume we've got 100% charge.
+     */
+    if ( (mHighestMilliVolts - mLowestMilliVolts) > mMinimumDeltaMilliVoltsForValidPercent)
+    {
+        percent = 100;
+    }
+    Quadcopter::getInstance().setBatteryPercentage((uint8_t) percent);
 
     /* Only log data if there is enough delta */
-    if ( fabs(voltage - mPreviousVoltage) > mVoltageDeltaForLog)
+    if ( abs(milliVolts - mPrevMilliVolts) > mMilliVoltDeltaToLog)
     {
-        mPreviousVoltage = voltage;
+        mPrevMilliVolts = milliVolts;
 
         /* use commas to be in-line with CSV format to easily plot in excel */
-        LOG_INFO_SIMPLE("Battery volts, %.2f, estimated charge %%, %u, (%.2f/%.2f)",
-                        voltage, percentUint, mLowestVoltage, mHighestVoltage);
+        LOG_INFO_SIMPLE("Battery millivolts, %u, estimated charge %%, %u, (%u/%u)",
+                        milliVolts, percent, mLowestMilliVolts, mHighestMilliVolts);
     }
 
     return true;
