@@ -12,9 +12,9 @@
 Quadcopter::Quadcopter() :
     mQuadcopterMode(mode_manual),
     mInternalMode(imode_full_manual),
-    mBatteryPercentage(0),
-    mLowBatteryTriggerPercentage(20),
-    mRcReceiverIsHealthy(false),
+    mBatteryPercentage(100),            /* Assume 100% until changed otherwise */
+    mLowBatteryTriggerPercentage(20),   /* Default to 20% until changed otherwise */
+    mRcReceiverIsHealthy(true),         /* Assume receiver is healthy until changed */
     mKillSwitchEngaged(false)
 {
     memset(&mCurrentGps, sizeof(mCurrentGps), 0);
@@ -107,7 +107,7 @@ void Quadcopter::fly(void)
             mInternalMode = imode_low_battery;
 
             LOG_INFO("Low battery has been detected - %u/%u %%",
-                     mLowBatteryTriggerPercentage, mBatteryPercentage);
+                     mBatteryPercentage, mLowBatteryTriggerPercentage);
         }
     }
     else if (!mRcReceiverIsHealthy) {

@@ -28,7 +28,7 @@
 
 battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     scheduler_task("battery", BATTERY_TASK_STACK_BYTES, priority),
-    mLowestMilliVolts(4 * 1000),      /* A really high voltage, it will be reset upon actual voltage sensed */
+    mLowestMilliVolts(999 * 1000),    /* A really high voltage, it will be reset upon actual voltage sensed */
     mHighestMilliVolts(-1 * 1000),    /* A really low voltage, it will be reset upon actual voltage sensed */
     mMilliVoltDeltaToLog(0.1 * 1000), /* Default configuration to log data if voltage changes */
     mPrevMilliVolts(0),
@@ -107,8 +107,10 @@ bool battery_monitor_task::run(void *p)
 
     /* Set the value to the Quadcopter if we think we've determined a valid battery voltage.
      * If we haven't "learned" about the battery pack, we assume we've got 100% charge.
+     * First loop will result in high and low values being the same
      */
-    if ( (mHighestMilliVolts - mLowestMilliVolts) > mMinimumDeltaMilliVoltsForValidPercent)
+    if ( ((mHighestMilliVolts - mLowestMilliVolts) > mMinimumDeltaMilliVoltsForValidPercent) ||
+         (mHighestMilliVolts == mLowestMilliVolts))
     {
         percent = 100;
     }
