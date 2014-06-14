@@ -28,7 +28,7 @@ bool quadcopter_task::init(void)
     /* Register the variable we want to preserve on the "disk" */
     if (success) {
         tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
-        if (success) success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_float);
+        if (success) success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
     }
 
     // Do not update task statistics (stack usage) too frequently
