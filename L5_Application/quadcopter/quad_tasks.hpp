@@ -13,27 +13,6 @@
 
 
 /**
- * This is the sensor OS task.
- * The objective is to read all of the sensor values, and pass them
- * on to the flight controller for processing
- *
- * @ingroup Quadcopter Tasks
- */
-class sensor_task : public scheduler_task
-{
-    public:
-        sensor_task(const uint8_t priority);
-        bool init(void);
-        bool run(void *p);
-
-    protected:
-    private:
-        sensor_task(); ///< Disallow default constructor (no code is defined)
-};
-
-
-
-/**
  * This is the Quadcopter OS task.
  * This processes the raw sensor values through various filters, and applies
  * the flight controller inputs to fly the quadcopter.

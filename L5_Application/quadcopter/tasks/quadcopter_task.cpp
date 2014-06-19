@@ -12,6 +12,9 @@
 /// Define the stack size this task is estimated to use
 #define QUADCOPTER_TASK_STACK_BYTES        (3 * 512)
 
+/// Define the frequency of updating sensors and flying the quadcopter
+#define QUADCOPTER_LOOP_FREQUENCY_HZ       (250)
+
 
 
 quadcopter_task::quadcopter_task(const uint8_t priority) :
@@ -24,6 +27,7 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
 bool quadcopter_task::init(void)
 {
     bool success = true;
+    FlightController &f = Quadcopter::getInstance().mFlightController;
 
     /* Register the variable we want to preserve on the "disk" */
     if (success) {
@@ -31,8 +35,18 @@ bool quadcopter_task::init(void)
         if (success) success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
     }
 
+    /* TODO: Set min/max according to the particular sensor */
+    if (success) {
+        f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+                f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+               f.mMagnoSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+    }
+
     // Do not update task statistics (stack usage) too frequently
     setStatUpdateRate(1 * 60 * 1000);
+
+    // Set the frequency of run() method
+    setRunDuration(1000 / QUADCOPTER_LOOP_FREQUENCY_HZ);
 
     return success;
 }
@@ -49,13 +63,7 @@ bool quadcopter_task::taskEntry(void)
 
 bool quadcopter_task::run(void *p)
 {
-    const uint32_t timeoutMs = 100;
     Quadcopter &q = Quadcopter::getInstance();
-
-    if (!xSemaphoreTake(getSharedObject(shared_SensorDataReadySemaphore), OS_MS(timeoutMs))) {
-        LOG_ERROR("Unable to get sensor data input within %u ms", timeoutMs);
-        return true;
-    }
 
     /* Run the filters on the raw input received by the flight controller */
     q.mFlightController.runSensorInputFilters();

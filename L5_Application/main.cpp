@@ -104,7 +104,6 @@ int main(void)
     scheduler_add_task(new terminalTask(PRIORITY_HIGH));
 
     /* Quadcopter tasks should be the highest priority to process the flight controller algorithms */
-    scheduler_add_task(new sensor_task    (PRIORITY_HIGH));
     scheduler_add_task(new quadcopter_task(PRIORITY_HIGH));
 
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
