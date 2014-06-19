@@ -72,7 +72,7 @@
 #define configUSE_MALLOC_FAILED_HOOK            1   ///< If memory runs out, the hook function is called
 
 #define configCPU_CLOCK_HZ			            (DESIRED_CPU_CLOCK)
-#define configTICK_RATE_HZ			            ( 200 )
+#define configTICK_RATE_HZ			            ( 500 )
 #define configMAX_PRIORITIES			        ( 4 )
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 
