@@ -27,7 +27,7 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
 bool quadcopter_task::init(void)
 {
     bool success = true;
-    FlightController &f = Quadcopter::getInstance().mFlightController;
+    FlightController &f = Quadcopter::getInstance();
 
     /* Register the variable we want to preserve on the "disk" */
     if (success) {
@@ -66,7 +66,7 @@ bool quadcopter_task::run(void *p)
     Quadcopter &q = Quadcopter::getInstance();
 
     /* Run the filters on the raw input received by the flight controller */
-    q.mFlightController.runSensorInputFilters();
+    q.runSensorInputFilters();
 
     /* Fly the quadcopter */
     q.fly();

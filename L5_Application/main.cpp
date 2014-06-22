@@ -40,10 +40,10 @@
  *  P1.31   ADC-5   Available
  *
  *  Port2 is the PWM output port (on first six pins)
- *  P2.0    PWM Rotor 1
- *  P2.1    PWM Rotor 2
- *  P2.2    PWM Rotor 3
- *  P2.3    PWM Rotor 4
+ *  P2.0    PWM Rotor 1 - North Motor
+ *  P2.1    PWM Rotor 2 - South Motor
+ *  P2.2    PWM Rotor 3 - East Motor
+ *  P2.3    PWM Rotor 4 - West Motor
  *  P2.4    Available (reserved) PWM
  *  P2.5    Available (reserved) PWM
  *

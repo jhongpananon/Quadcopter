@@ -247,7 +247,7 @@ bool rc_remote_task::run(void *p)
             /* Since we have all the inputs, set them all to the flight controller */
             const bool healthy = true;
             Quadcopter::getInstance().setRcReceiverStatus(healthy);
-            Quadcopter::getInstance().setFlightParameters(mFlightParams);
+            Quadcopter::getInstance().setFlightControl(mFlightParams);
 
             /* Reset the parameters so we don't use stale values next time */
             memset(&mFlightParams, sizeof(mFlightParams), 0);

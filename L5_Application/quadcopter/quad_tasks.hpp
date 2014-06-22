@@ -98,7 +98,7 @@ class rc_remote_task : public scheduler_task
         int8_t getNormalizedValue(const uint32_t &pulseWidthUs);
 
         /// The flight parameters being decoded from RC receiver
-        flightParams_t mFlightParams;
+        Quadcopter::flightParams_t mFlightParams;
 
         /// The maximum pulse width of a single channel in microseconds
         static const uint32_t mscMaxPulseWidthUs = 2 * 1000;

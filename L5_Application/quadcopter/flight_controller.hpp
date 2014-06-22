@@ -9,22 +9,43 @@
 
 
 /**
- * Common structure used for pitch, roll, yaw, and throttle values
+ * The motor controller interface
  */
-typedef struct {
-    int8_t pitch;     ///< Pitch value
-    int8_t roll;      ///< Roll value
-    int8_t yaw;       ///< Yaw value
-    uint8_t throttle; ///< Throttle value
-} flightParams_t;
+class MotorControllerIface
+{
+    public:
+        virtual ~MotorControllerIface() { }
+
+        /**
+         * @{ Interface methods
+         * These should set the PWM percentage value of the motor controllers
+         */
+        virtual void setNorthMotor(uint8_t throttleValuePercent) = 0;
+        virtual void setSouthMotor(uint8_t throttleValuePercent) = 0;
+        virtual void setEastMotor (uint8_t throttleValuePercent) = 0;
+        virtual void setWestMotor (uint8_t throttleValuePercent) = 0;
+        /** @} */
+};
 
 /**
  * This is the flight controller class.
  * This allows the user to set the raw sensor values, process them, and apply
  * the user input to be able to fly the Quadcopter.
  */
-class FlightController
+class FlightController : public MotorControllerIface
 {
+    /* Public types */
+    public:
+        /**
+         * Common structure used for pitch, roll, yaw, and throttle values
+         */
+        typedef struct {
+            int8_t pitch;     ///< Pitch value
+            int8_t roll;      ///< Roll value
+            int8_t yaw;       ///< Yaw value
+            uint8_t throttle; ///< Throttle value
+        } flightParams_t;
+
     public:
         /**
          * @{ Public sensors of the flight controller
@@ -42,6 +63,13 @@ class FlightController
 
         }
 
+    protected:
+        /// Protected constructor of this abstract class
+        FlightController()
+        {
+
+        }
+
         /**
          * @{ API to set flight parameters
          *
@@ -51,8 +79,6 @@ class FlightController
          *                          - yaw       Yaw value from -100 -> +100
          *                          - throttle  The throttle value from 0 -> +100
          *
-         * TODO : This should be a hidden interface, not everyone should be allowed to do this
-         * because only Quadcopter should set the input parameters based on its logic.
          */
         void setFlightParameters(const flightParams_t& params)
         {
@@ -60,7 +86,6 @@ class FlightController
         }
         /** @} */
 
-    protected:
     private:
         flightParams_t mInputFlightParams;     ///< Input flight parameters
 };

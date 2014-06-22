@@ -86,7 +86,7 @@ bool gps_task::run(void *p)
             (void) altitude;
 
             /* Set the GPS data on the Quadcopter class */
-            gpsData_t gpsData;
+            Quadcopter::gpsData_t gpsData;
             gpsData.latitude = atof(latitude);
             gpsData.longitude = atof(longitude);
             Quadcopter::getInstance().setCurrentGpsCoordinates(gpsData);
