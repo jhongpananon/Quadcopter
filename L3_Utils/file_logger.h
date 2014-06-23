@@ -49,7 +49,7 @@ extern "C" {
  * the data buffer to the file.  So in an event when no logging calls occur and
  * there is data in the buffer, we will write it to the file after this time.
  */
-#define FILE_LOGGER_BUFFER_SIZE      (2 * 512)   ///< Recommend multiples of 512
+#define FILE_LOGGER_BUFFER_SIZE      (4 * 512)   ///< Recommend multiples of 512
 #define FILE_LOGGER_MSG_BUFFERS      20          ///< Number of buffers (need to have enough while file is being written)
 #define FILE_LOGGER_MSG_MAX_LEN      144         ///< Max length of a log message
 #define FILE_LOGGER_FILENAME         "log.csv"   ///< Destination filename
