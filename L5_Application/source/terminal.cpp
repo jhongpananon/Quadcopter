@@ -123,6 +123,15 @@ bool terminalTask::taskEntry()
                                                  "'telemetry get <comp. name> <name>' to get variable value\n");
     #endif
 
+    /* Quadcopter project handlers */
+    CMD_HANDLER_FUNC(quadcopterPidChangeHandler);
+    cp.addHandler(quadcopterPidChangeHandler, "pid", "Change or get PID parameters: \n"
+                                                     "'pid get' : Print all PID parameters\n"
+                                                     "'pid pitch 1 0.5 0' : Set PITCH parameters\n"
+                                                     "'pid roll 1 0.5 0' : Set ROLL parameters\n"
+                                                     "'pid yaw 1 0.5 0' : Set YAW parameters\n");
+
+
     // Initialize Interrupt driven version of getchar & putchar
     Uart0& uart0 = Uart0::getInstance();
     bool success = uart0.init(UART0_DEFAULT_RATE_BPS, 32, UART0_TXQ_SIZE);

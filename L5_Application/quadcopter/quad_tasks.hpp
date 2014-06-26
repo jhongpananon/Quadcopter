@@ -24,6 +24,7 @@ class quadcopter_task : public scheduler_task
     public:
         quadcopter_task(const uint8_t priority);
         bool init(void);
+        bool regTlm(void);
         bool taskEntry(void);
         bool run(void *p);
 

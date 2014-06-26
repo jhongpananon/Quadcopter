@@ -3,7 +3,10 @@
  */
 #ifndef PID_HPP_
 #define PID_HPP_
+
 #include <stdint.h>
+
+#include "friend_for_tlm_reg.hpp"
 
 
 
@@ -26,7 +29,7 @@
  *
  *    // Loop:
  *    while (1) {
- *        float output = p.compute(input, timeNowInMilliseconds);
+ *        float output = p.compute(setpoint, input, timeNowInMilliseconds);
  *
  *        // Apply the output ...
  *    }
@@ -47,6 +50,28 @@ class PID
             pid_direction_positive,
             pid_direction_negative,
         } pidDirection_t;
+
+        /**
+         * Kp = Proportional element of the PID, reduces large part of the overall error.
+         *    - Increasing Kp will overshoot and oscillate, but reach the desired state faster.
+         *    - Increasing Kp will reduce steady state error, but after a certain limit,
+         *      increasing Kp will only increase the overshoot.
+         *    - Kp reduces the rise time.
+         *
+         * Ki = Integral element of the PID, reduces the final error accumulated over time.
+         *    - Ki eliminates the steady state error, but after a certain limit,
+         *      increasing Ki will only increase the overshoot.
+         *    - Ki reduces the rise time.
+         *
+         * Kd = Derivative element of the PID, counteracts Kp, and Ki when the output changes quickly.
+         *    - Kd decreases the overshoot.
+         *    - Kd reduces the settling time.
+         */
+        typedef struct {
+            float kp;
+            float ki;
+            float kd;
+        } pidParams_t;
 
     public:
         /// Default constructor
@@ -80,13 +105,14 @@ class PID
 
         /**
          * Sets the parameters of the PID feedback loop
-         * @param Kp   The proportional gain
-         * @param Ki   The integral gain
-         * @param Kd   The differential gain
+         * @param params    PID parameters, @see pidParams_t
          *
          * @note The PID parameters should be all positive
          */
-        void setPidParameters(float Kp, float Ki, float Kd);
+        void setPidParameters(const pidParams_t& params);
+
+        /// @returns the PID parameters set by setPidParameters()
+        inline pidParams_t getPidParameters(void) const { return mPidParams; }
 
         /**
          * Sets the output limits of the PID to avoid "Reset windup"
@@ -126,30 +152,8 @@ class PID
 
     protected:
     private:
-        /**
-         * Kp = Proportional element of the PID, reduces large part of the overall error.
-         *    - Increasing Kp will overshoot and oscillate, but reach the desired state faster.
-         *    - Increasing Kp will reduce steady state error, but after a certain limit,
-         *      increasing Kp will only increase the overshoot.
-         *    - Kp reduces the rise time.
-         */
-        float kp;
 
-        /**
-         * Ki = Integral element of the PID, reduces the final error accumulated over time.
-         *    - Ki eliminates the steady state error, but after a certain limit,
-         *      increasing Ki will only increase the overshoot.
-         *    - Ki reduces the rise time.
-         */
-        float ki;
-
-        /**
-         * Kd = Derivative element of the PID, counteracts Kp, and Ki when the output changes quickly.
-         *    - Kd decreases the overshoot.
-         *    - Kd reduces the settling time.
-         */
-        float kd;
-
+        pidParams_t mPidParams; ///< PID parameters
         float mPidOutput;       ///< The output of the PID algorithm
         float mPidSetpoint;     ///< The target of the PID algorithm
         uint32_t mLastTimeMs;   ///< The last time we processed the PID loop
@@ -192,6 +196,8 @@ class PID
          */
         float mOutputMin, mOutputMax;
         /** @} */
+
+        ALLOW_FRIEND_TO_REGISTER_TLM();
 };
 
 

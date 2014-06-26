@@ -34,12 +34,12 @@ void FlightController::computePitchRollYawValues(void)
 void FlightController::computeThrottleValues(const uint32_t timeNowMs)
 {
     MotorControllerIface::motorValues_t values;
-    const float throttle = (float) mInputFlightParams.throttle;
+    const float throttle = (float) mFlightControllerAngles.throttle;
 
     /* Get the PRY values we need through the PID */
-    const float pitchThrottle = mPitchPid.compute(mInputFlightParams.angle.pitch, mCurrentAngles.pitch, timeNowMs);
-    const float rollThrottle = mRollPid.compute(mInputFlightParams.angle.roll, mCurrentAngles.roll, timeNowMs);
-    const float yawThrottle = mYawPid.compute(mInputFlightParams.angle.yaw, mCurrentAngles.yaw, timeNowMs);
+    const float pitchThrottle = mPitchPid.compute(mFlightControllerAngles.angle.pitch, mCurrentAngles.pitch, timeNowMs);
+    const float rollThrottle = mRollPid.compute(mFlightControllerAngles.angle.roll, mCurrentAngles.roll, timeNowMs);
+    const float yawThrottle = mYawPid.compute(mFlightControllerAngles.angle.yaw, mCurrentAngles.yaw, timeNowMs);
 
     /* Set the motor values that control the pitch
      * For example, if the desired pitch angle is 15deg (nose up), and actual is zero, then the

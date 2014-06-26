@@ -1,12 +1,14 @@
 /**
  * @file
  */
+
+#include <string.h>
+
 #include "pid.hpp"
 
 
 
 PID::PID() :
-        kp(0), ki(0), kd(0),
         mPidOutput(0),
         mPidSetpoint(0),
         mLastTimeMs(0),
@@ -18,7 +20,7 @@ PID::PID() :
         mOutputMin(0),
         mOutputMax(0)
 {
-
+    memset(&mPidParams, 0, sizeof(mPidParams));
 }
 
 float PID::compute(const float setpointValue, const float presentInputValue, const uint32_t timeNowMs)
@@ -38,7 +40,7 @@ float PID::compute(const float setpointValue, const float presentInputValue, con
 
         /* Compute all the working error variables */
         const float error = mPidSetpoint - presentInputValue;
-        mIntegralTerm += (ki * error);
+        mIntegralTerm += (mPidParams.ki * error);
 
         /* Cap the integral term to avoid PID from using unusable values.
          * http://brettbeauregard.com/blog/2011/04/improving-the-beginner%E2%80%99s-pid-reset-windup/
@@ -56,7 +58,7 @@ float PID::compute(const float setpointValue, const float presentInputValue, con
         const float dInput = (presentInputValue - mLastInput);
 
         /* Compute PID Output */
-        mPidOutput = (kp * error) + mIntegralTerm - (kd * dInput);
+        mPidOutput = (mPidParams.kp * error) + mIntegralTerm - (mPidParams.kd * dInput);
 
         /* Cap the PID from using unusable values */
         if (mPidOutput > mOutputMax) {
@@ -74,25 +76,25 @@ float PID::compute(const float setpointValue, const float presentInputValue, con
     return mPidOutput;
 }
 
-void PID::setPidParameters(float Kp, float Ki, float Kd)
+void PID::setPidParameters(const pidParams_t& params)
 {
-    if (Kp < 0 || Ki < 0 || Kd < 0) {
+    if (params.kp < 0 || params.ki < 0 || params.kd < 0) {
         return;
     }
 
     const float SampleTimeInSec = ((float) mSampleTimeMs) / 1000;
-    kp = Kp;
-    ki = Ki * SampleTimeInSec;
-    kd = Kd / SampleTimeInSec;
+    mPidParams.kp = params.kp;
+    mPidParams.ki = params.ki * SampleTimeInSec;
+    mPidParams.kd = params.kd / SampleTimeInSec;
 
     /* Negative the PID parameters if the direction is negative
      * http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-direction/
      */
     if (pid_direction_negative == mPidControllerDirection)
     {
-        kp = (0 - kp);
-        ki = (0 - ki);
-        kd = (0 - kd);
+        mPidParams.kp = (0 - mPidParams.kp);
+        mPidParams.ki = (0 - mPidParams.ki);
+        mPidParams.kd = (0 - mPidParams.kd);
     }
 }
 
@@ -101,8 +103,8 @@ void PID::setSampleTime(const uint32_t newSampleTimeMs)
     if (newSampleTimeMs > 0)
     {
         float ratio = (float) newSampleTimeMs / (float) mSampleTimeMs;
-        ki *= ratio;
-        kd /= ratio;
+        mPidParams.ki *= ratio;
+        mPidParams.kd /= ratio;
         mSampleTimeMs = (int) newSampleTimeMs;
     }
 }

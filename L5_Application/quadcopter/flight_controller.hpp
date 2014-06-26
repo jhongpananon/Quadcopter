@@ -8,6 +8,7 @@
 
 #include "pid.hpp"
 #include "three_axis_sensor.hpp"
+#include "friend_for_tlm_reg.hpp"
 
 
 
@@ -43,6 +44,9 @@ class MotorControllerIface
 
     private:
         motorValues_t mMotorValues; ///< The motor values
+
+        // Allow private member access to register variables' telemetry
+        ALLOW_FRIEND_TO_REGISTER_TLM();
 };
 
 /**
@@ -56,9 +60,9 @@ class FlightController : public MotorControllerIface
     public:
         /// Structure of pitch, roll, and yaw
         typedef struct {
-            int8_t pitch;   ///< Pitch angle
-            int8_t roll;    ///< Roll angle
-            int8_t yaw;     ///< Yaw angle
+            int16_t pitch;   ///< Pitch angle
+            int16_t roll;    ///< Roll angle
+            int16_t yaw;     ///< Yaw angle
         } flightYPR_t;
 
         /// Common structure used for pitch, roll, yaw, and throttle values
@@ -79,13 +83,22 @@ class FlightController : public MotorControllerIface
         /**
          * @{ API for the PID parameters
          */
-        inline void setPitchAxisPidParameters(float Kp, float Ki, float Kd) { mPitchPid.setPidParameters(Kp, Ki, Kd); }
-        inline void setRollAxisPidParameters(float Kp, float Ki, float Kd)  { mRollPid.setPidParameters(Kp, Ki, Kd);  }
-        inline void setYawAxisPidParameters(float Kp, float Ki, float Kd)   { mYawPid.setPidParameters(Kp, Ki, Kd);   }
+        inline void setPitchAxisPidParameters(const PID::pidParams_t& params) { mPitchPid.setPidParameters(params); }
+        inline void setRollAxisPidParameters(const PID::pidParams_t& params)  { mRollPid.setPidParameters(params);  }
+        inline void setYawAxisPidParameters(const PID::pidParams_t& params)   { mYawPid.setPidParameters(params);   }
+
+        inline PID::pidParams_t getPitchAxisPidParameters(void) { return mPitchPid.getPidParameters(); }
+        inline PID::pidParams_t getRollAxisPidParameters(void)  { return mRollPid.getPidParameters();  }
+        inline PID::pidParams_t getYawAxisPidParameters(void)   { return mYawPid.getPidParameters();   }
 
         void setCommonPidParameters(float minOutputValue, float maxOutputValue, uint32_t pidUpdateTimeMs);
         /** @} */
 
+        /// @returns The current flight angles computed by the sensors
+        inline flightYPR_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
+
+    /* Next set of protected methods are meant to be called by the parent class */
+    protected:
         /**
          * Runs filters on the sensor inputs.
          * The next step is to compute the PRY values using computePitchRollYawValues()
@@ -116,9 +129,6 @@ class FlightController : public MotorControllerIface
          */
         inline void applyPropellerValues(void) { applyMotorValues(getMotorValues()); }
 
-        /// @returns The current flight angles computed by the sensors
-        inline flightYPR_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
-
     protected:
         /// Protected constructor of this abstract class
         FlightController();
@@ -127,18 +137,21 @@ class FlightController : public MotorControllerIface
          * API to set flight parameters
          * @param [in] params   The flight parameters
          */
-        void setFlightParameters(const flightParams_t& params)
+        inline void setFlightParameters(const flightParams_t& params)
         {
-            mInputFlightParams = params;
+            mFlightControllerAngles = params;
         }
 
     private:
-        flightParams_t mInputFlightParams;     ///< Input flight parameters
-        flightYPR_t mCurrentAngles;            ///< The current flight angles
+        flightParams_t mFlightControllerAngles;  ///< Input flight parameters
+        flightYPR_t mCurrentAngles;              ///< The current flight angles
 
         PID mPitchPid;  ///< PID for pitch control
         PID mRollPid;   ///< PID for roll
         PID mYawPid;    ///< PID for yaw
+
+        // Allow private member access to register variables' telemetry
+        ALLOW_FRIEND_TO_REGISTER_TLM();
 };
 
 

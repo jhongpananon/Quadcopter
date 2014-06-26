@@ -3,9 +3,12 @@
  */
 #ifndef QUADCOPTER_BASE_HPP_
 #define QUADCOPTER_BASE_HPP_
+
 #include <stdint.h>
+
 #include "flight_controller.hpp"
 #include "singleton_template.hpp"
+#include "friend_for_tlm_reg.hpp"
 
 
 
@@ -94,8 +97,9 @@ class QuadcopterBase : public FlightController
 
         /**
          * Flies the Quadcopter based on all the input data
+         * @param   timeNowMs The current time in milliseconds. This is used to run the PID algorithms
          */
-        void fly(void);
+        void fly(const uint32_t timeNowMs);
 
     protected:
         /// Protected constructor of this abstract class
@@ -119,7 +123,6 @@ class QuadcopterBase : public FlightController
         } quadcopterInternalMode_t;
 
     private:
-
         quadcopterMode_t mQuadcopterMode;       ///< Quadcopter's mode
         quadcopterInternalMode_t mInternalMode; ///< Quadcopter's internal mode
 
@@ -132,6 +135,9 @@ class QuadcopterBase : public FlightController
 
         gpsData_t mCurrentGps;                  ///< Current GPS coordinates of the Quadcopter
         gpsData_t mDestinationGps;              ///< Destination GPS coordinates of the Quadcopter
+
+        // Allow private member access to register variables' telemetry
+        ALLOW_FRIEND_TO_REGISTER_TLM();
 };
 
 

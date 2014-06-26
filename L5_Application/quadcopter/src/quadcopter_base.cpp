@@ -73,7 +73,7 @@ void QuadcopterBase::setRcReceiverStatus(bool isHealthy)
     mRcReceiverIsHealthy = isHealthy;
 }
 
-void QuadcopterBase::fly(void)
+void QuadcopterBase::fly(const uint32_t timeNowMs)
 {
     /* Ideas are documented here, need to collaborate and discuss:
      *
@@ -132,4 +132,16 @@ void QuadcopterBase::fly(void)
             LOG_ERROR("Quadcopter is in invalid mode");
             break;
     }
+
+    /* Run the filters on the raw input received by the flight controller */
+    runSensorInputFilters();
+
+    /* Now compute PRY from the sensor inputs */
+    computePitchRollYawValues();
+
+    /* Using the PID algorithms, compute the throttle values for each propeller */
+    computeThrottleValues(timeNowMs);
+
+    /* Finally, apply the propeller values */
+    applyPropellerValues();
 }
