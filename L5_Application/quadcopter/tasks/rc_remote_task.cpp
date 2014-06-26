@@ -139,7 +139,7 @@ rc_remote_task::rc_remote_task(const uint8_t priority) :
     scheduler_task("rcrx", RC_RX_TASK_STACK_BYTES, priority)
 {
     /* Use init() for memory allocation */
-    memset(&mFlightParams, sizeof(mFlightParams), 0);
+    memset(&mFlightCommand, sizeof(mFlightCommand), 0);
 
 }
 
@@ -228,29 +228,29 @@ bool rc_remote_task::run(void *p)
     switch (channelData.channel)
     {
         case rc_chan1_pitch:
-            mFlightParams.pitch = getNormalizedValue(channelData.pulse_time_us);
+            mFlightCommand.angle.pitch = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan2_roll:
-            mFlightParams.roll = getNormalizedValue(channelData.pulse_time_us);
+            mFlightCommand.angle.roll = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan3_yaw:
-            mFlightParams.yaw = getNormalizedValue(channelData.pulse_time_us);
+            mFlightCommand.angle.yaw = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan4_throttle:
         {
             /* Convert normalized data from -100->+100 to 0->100 */
-            mFlightParams.throttle = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
+            mFlightCommand.throttle = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
 
             /* Since we have all the inputs, set them all to the flight controller */
             const bool healthy = true;
             Quadcopter::getInstance().setRcReceiverStatus(healthy);
-            Quadcopter::getInstance().setFlightControl(mFlightParams);
+            Quadcopter::getInstance().setFlightControl(mFlightCommand);
 
             /* Reset the parameters so we don't use stale values next time */
-            memset(&mFlightParams, sizeof(mFlightParams), 0);
+            memset(&mFlightCommand, sizeof(mFlightCommand), 0);
 
             break;
         }

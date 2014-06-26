@@ -12,6 +12,8 @@
 
 /**
  * The quadcopter class
+ *
+ * This provides the interface to set the rotor PWMs
  */
 class Quadcopter : public QuadcopterBase, public SingletonTemplate<Quadcopter>
 {
@@ -19,10 +21,7 @@ class Quadcopter : public QuadcopterBase, public SingletonTemplate<Quadcopter>
         /**
          * @{ Pure virtual method overrides of the MotorControllerIface
          */
-        void setNorthMotor(uint8_t throttleValuePercent);
-        void setSouthMotor(uint8_t throttleValuePercent);
-        void setEastMotor (uint8_t throttleValuePercent);
-        void setWestMotor (uint8_t throttleValuePercent);
+        void applyMotorValues(const motorValues_t& values);
         /** @} */
 
     private:

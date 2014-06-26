@@ -28,6 +28,7 @@ bool quadcopter_task::init(void)
 {
     bool success = true;
     FlightController &f = Quadcopter::getInstance();
+    const uint32_t loopFrequencyMs = 1000 / QUADCOPTER_LOOP_FREQUENCY_HZ;
 
     /* Register the variable we want to preserve on the "disk" */
     if (success) {
@@ -37,6 +38,8 @@ bool quadcopter_task::init(void)
 
     /* TODO: Set min/max according to the particular sensor */
     if (success) {
+        f.setCommonPidParameters(0, 100, loopFrequencyMs);
+
         f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
                 f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
                f.mMagnoSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
@@ -46,7 +49,7 @@ bool quadcopter_task::init(void)
     setStatUpdateRate(1 * 60 * 1000);
 
     // Set the frequency of run() method
-    setRunDuration(1000 / QUADCOPTER_LOOP_FREQUENCY_HZ);
+    setRunDuration(loopFrequencyMs);
 
     return success;
 }
