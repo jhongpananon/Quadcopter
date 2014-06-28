@@ -131,6 +131,6 @@ int main(void)
     /* No need for IR remote control task */
     // scheduler_add_task(new remoteTask  (PRIORITY_LOW));
 
-    scheduler_start(false, true); ///< This shouldn't return
+    scheduler_start(false, false); ///< This shouldn't return
     return -1;
 }

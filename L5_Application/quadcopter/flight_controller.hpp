@@ -14,6 +14,7 @@
 
 /**
  * The motor controller interface
+ * This is an abstract class that FlightController calls to set the propeller motor throttle values.
  */
 class MotorControllerIface
 {
@@ -36,10 +37,14 @@ class MotorControllerIface
         /**
          * Interface method
          * This should set the PWM percentage value of the actual motor controllers
+         * @param values    The motor values; @see motorValues_t
          */
         virtual void applyMotorValues(const motorValues_t& values) = 0;
 
-        /// Sets (saves) the motor values at this class
+        /**
+         * Saves the motor values at this class, but doesn't apply them to the motors
+         * @param values    The motor values; @see motorValues_t
+         */
         inline void saveMotorValues(const motorValues_t& values) { mMotorValues = values; }
 
     private:
@@ -48,6 +53,8 @@ class MotorControllerIface
         // Allow private member access to register variables' telemetry
         ALLOW_FRIEND_TO_REGISTER_TLM();
 };
+
+
 
 /**
  * This is the flight controller class.

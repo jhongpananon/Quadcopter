@@ -246,14 +246,14 @@ class scheduler_task
          *       because the status of init() is checked and reported, but a failure at constructor
          *       will not be easily caught (or reported).
          */
-        virtual bool init()   { return true; }
+        virtual bool init(void)   { return true; }
 
         /**
          * Optional: Override this function to register your telemetry before FreeRTOS starts.
          * @return   true upon success.
          * @warning  DO NOT USE FreeRTOS blocking API in this function
          */
-        virtual bool regTlm() { return true; }
+        virtual bool regTlm(void) { return true; }
 
         /**
          * Optional : Override this function which is called ONCE after FreeRTOS starts
@@ -265,7 +265,7 @@ class scheduler_task
          * @warning  Do not suspend your task otherwise all tasks will get suspended.
          * @return   true upon success.
          */
-        virtual bool taskEntry() { return true; }
+        virtual bool taskEntry(void) { return true; }
 
         /**
          * MUST override this function to run your tasks' code

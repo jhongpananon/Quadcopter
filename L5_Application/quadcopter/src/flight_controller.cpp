@@ -1,13 +1,17 @@
 /**
  *
  */
+
+#include <string.h>
+
 #include "flight_controller.hpp"
 
 
 
 FlightController::FlightController()
 {
-
+    memset(&mFlightControllerAngles, 0, sizeof(mFlightControllerAngles));
+    memset(&mCurrentAngles, 0, sizeof(mCurrentAngles));
 }
 
 void FlightController::setCommonPidParameters(float minOutputValue, float maxOutputValue, uint32_t pidUpdateTimeMs)

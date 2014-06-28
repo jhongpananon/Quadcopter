@@ -1,8 +1,9 @@
-#include "quad_tasks.hpp"
+#include <stdio.h>
 
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "quad_tasks.hpp"
 #include "lpc_sys.h"
 #include "shared_handles.h"
 #include "file_logger.h"
@@ -22,9 +23,14 @@
 bool quadcopterRegisterTelemetry(void)
 {
     bool success = true;
+    const char * tlmName = "quadcopter_vars";
     Quadcopter &q = Quadcopter::getInstance();
-    tlm_component *quad = tlm_component_add("quadcopter");
+    tlm_component *quad = tlm_component_get_by_name(tlmName);
 
+    /* If telemetry component not found, then create it */
+    if (NULL == quad) {
+        quad = tlm_component_add(tlmName);
+    }
     if (success) {
         success = (NULL != quad);
     }
@@ -109,7 +115,10 @@ bool quadcopter_task::init(void)
 
 bool quadcopter_task::regTlm(void)
 {
-    return quadcopterRegisterTelemetry();
+
+    bool success = quadcopterRegisterTelemetry();
+
+    return true;
 }
 
 bool quadcopter_task::taskEntry(void)
