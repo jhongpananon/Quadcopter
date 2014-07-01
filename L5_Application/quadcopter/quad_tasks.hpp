@@ -8,6 +8,8 @@
 
 #include "sampler.hpp"
 #include "uart_dev.hpp"
+
+#include "soft_timer.hpp"
 #include "three_axis_sensor.hpp"
 
 
@@ -32,16 +34,29 @@ class quadcopter_task : public scheduler_task
     private:
         quadcopter_task(); ///< Disallow default constructor (no code is defined)
 
+        /// Detects and logs timing skew information
+        void detectTimingSkew(const uint32_t millis);
+
+        /// Updates the status LEDs of the quadcopter
+        void updateStatusLeds(const uint32_t millis);
+
+        /// Instance of the quadcopter
+        Quadcopter &mQuadcopter;
+
         /**
          * The trigger point of "low" battery.
          * This is saved on the disk, and set on the Quadcopter class
          */
         uint8_t mLowBatteryTriggerPercent;
 
-        /**
-         * The timestamp of last call to the run() method
-         */
+        /// The timestamp of last call to the run() method
         uint32_t mLastCallMs;
+
+        /// Timings at which the status LEDs will update
+        static const uint32_t mLedUpdateRateMs = 250;
+
+        /// Time time at which point the status LEDs will update
+        uint32_t mNextLedUpdateTimeMs;
 };
 
 

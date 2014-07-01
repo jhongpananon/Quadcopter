@@ -47,36 +47,36 @@ class QuadcopterBase : public FlightController
          * Certain conditions override the requested parameters, such as kill switch or low battery voltage.
          * @param [in] params   The flight parameters "requested" to be set.
          */
-        void setFlightControl(const FlightController::flightParams_t& params);
+        inline void setFlightControl(const FlightController::flightParams_t& params) { mRequestedFlightParams = params; }
 
         /**
          * Sets the current GPS coordinates of the Quadcopter
          * @param [in] data The GPS data
          */
-        void setCurrentGpsCoordinates(const gpsData_t& data);
+        inline void setCurrentGpsCoordinates(const gpsData_t& data) {  mCurrentGps = data; }
 
         /// Sets the GPS status if GPS has locked on or not
-        void setGpsStatus(bool locked) { mGpsLocked = locked; }
+        inline void setGpsStatus(bool locked) { mGpsLocked = locked; }
 
         /// @returns true if the GPS is receiving a signal
-        bool getGpsStatus(void) const  { return mGpsLocked; }
+        inline bool getGpsStatus(void) const  { return mGpsLocked; }
 
         /**
          * Set the destination coordinates to follow in autonomous mode
          * @param [in] data The GPS data
          */
-        void setDestinationGpsCoordinates(const gpsData_t& data);
+        inline void setDestinationGpsCoordinates(const gpsData_t& data) { mDestinationGps = data; }
 
         /**
          * Sets the Quadcopter's mode
          * @param [in] mode     The quadcopter mode type
          */
-        void setOperationMode(quadcopterMode_t mode);
+        inline void setOperationMode(quadcopterMode_t mode) { mQuadcopterMode = mode; }
 
         /**
          * @returns the mode set by setMode()
          */
-        quadcopterMode_t getOperationMode(void) const;
+        inline quadcopterMode_t getOperationMode(void) const { return mQuadcopterMode; }
 
         /**
          * Sets the battery charge percentage
@@ -93,19 +93,19 @@ class QuadcopterBase : public FlightController
         /**
          * Engages the "kill switch"
          */
-        void engageKillSwitch(void);
+        inline void engageKillSwitch(void) { mKillSwitchEngaged = true; }
 
         /**
          * Updates the status of the RC receiver to indicate if valid input is being
          * obtained or not.
          */
-        void setRcReceiverStatus(bool isHealthy);
+        inline void setRcReceiverStatus(bool isHealthy) { mRcReceiverIsHealthy = isHealthy; }
 
         /**
          * @{ Gets and sets the timing skewed flag
          */
-        inline void setTimingSkewedFlag(bool flag)  { mTimingSkewed = flag; }
-        inline bool getTimingSkewedFlag(void) const { return mTimingSkewed; }
+        inline void incrTimingSkewedCount(void)  { ++mTimingSkewedCount; }
+        inline uint32_t getTimingSkewedCount(void) const { return mTimingSkewedCount; }
         /** @} */
 
         /// Processes the flying logic to apply the flight parameters to the flight controller
@@ -149,11 +149,10 @@ class QuadcopterBase : public FlightController
         bool mKillSwitchEngaged;                ///< Flag if kill switch has been engaged
 
         /**
-         * Flag if timing of calling function is skewed
-         * This is set by the user manually and this class merely provides the API to get and set
-         * this flag.
+         * Flag if timing of calling function is skewed. This is set by the user manually and this class
+         * merely provides the API to get and set this flag.
          */
-        bool mTimingSkewed;
+        uint32_t mTimingSkewedCount;
 
         flightParams_t mRequestedFlightParams;  ///< Flight parameters being requested by the user (RC receiver)
 

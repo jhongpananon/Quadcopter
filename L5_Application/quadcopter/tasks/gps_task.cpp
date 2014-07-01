@@ -91,10 +91,9 @@ bool gps_task::run(void *p)
             Quadcopter::gpsData_t gpsData;
             gpsData.latitude = atof(latitude);
             gpsData.longitude = atof(longitude);
-
             q.setCurrentGpsCoordinates(gpsData);
 
-            const uint32_t minSatsForLock = 3;
+            const int minSatsForLock = 3;
             const bool locked = atoi(numSatellites) >= minSatsForLock;
             q.setGpsStatus(locked);
         }

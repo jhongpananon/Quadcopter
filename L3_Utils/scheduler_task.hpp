@@ -339,8 +339,8 @@ class scheduler_task
     #endif
 
         /**
-         * Set the update rate in milliseconds that the free stack
-         * size is calculated at.  Default rate is 60 seconds.
+         * Set the update rate in milliseconds that the free stack size is calculated at.
+         * Default rate is 60 seconds; zero is to disable it.
          */
         inline void setStatUpdateRate(uint32_t rateMs) { mStatUpdateRateMs = rateMs; }
 

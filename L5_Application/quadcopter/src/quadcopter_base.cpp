@@ -16,37 +16,12 @@ QuadcopterBase::QuadcopterBase() :
     mLowBatteryTriggerPercentage(20),   /* Default to 20% until changed otherwise */
     mRcReceiverIsHealthy(true),         /* Assume receiver is healthy until changed */
     mKillSwitchEngaged(false),
-    mTimingSkewed(false),
+    mTimingSkewedCount(0),
     mGpsLocked(false)
 {
     memset(&mCurrentGps, sizeof(mCurrentGps), 0);
     memset(&mDestinationGps, sizeof(mDestinationGps), 0);
     memset(&mRequestedFlightParams, sizeof(mRequestedFlightParams), 0);
-}
-
-void QuadcopterBase::setFlightControl(const FlightController::flightParams_t& params)
-{
-    mRequestedFlightParams = params;
-}
-
-void QuadcopterBase::setCurrentGpsCoordinates(const gpsData_t& data)
-{
-    mCurrentGps = data;
-}
-
-void QuadcopterBase::setDestinationGpsCoordinates(const gpsData_t& data)
-{
-    mDestinationGps = data;
-}
-
-void QuadcopterBase::setOperationMode(quadcopterMode_t mode)
-{
-    mQuadcopterMode = mode;
-}
-
-QuadcopterBase::quadcopterMode_t QuadcopterBase::getOperationMode(void) const
-{
-    return mQuadcopterMode;
 }
 
 void QuadcopterBase::setBatteryPercentage(uint8_t batteryPercent)
@@ -63,16 +38,6 @@ void QuadcopterBase::setLowBatteryTriggerPercentage(uint8_t batteryPercent)
     if (batteryPercent <= max) {
         mLowBatteryTriggerPercentage = batteryPercent;
     }
-}
-
-void QuadcopterBase::engageKillSwitch(void)
-{
-    mKillSwitchEngaged = true;
-}
-
-void QuadcopterBase::setRcReceiverStatus(bool isHealthy)
-{
-    mRcReceiverIsHealthy = isHealthy;
 }
 
 void QuadcopterBase::updateFlyLogic(void)

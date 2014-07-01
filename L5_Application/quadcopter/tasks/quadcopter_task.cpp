@@ -9,8 +9,8 @@
 
 #include "io.hpp"
 #include "file_logger.h"
+#include "soft_timer.hpp"
 #include "c_tlm_var.h"
-
 
 
 /// Define the stack size this task is estimated to use
@@ -81,8 +81,10 @@ bool quadcopterRegisterTelemetry(void)
 
 quadcopter_task::quadcopter_task(const uint8_t priority) :
     scheduler_task("quadcopter", QUADCOPTER_TASK_STACK_BYTES, priority),
+    mQuadcopter(Quadcopter::getInstance()),
     mLowBatteryTriggerPercent(20),
-    mLastCallMs(0)
+    mLastCallMs(0),
+    mNextLedUpdateTimeMs(0)
 {
     /* Use init() for memory allocation */
 }
@@ -90,29 +92,22 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
 bool quadcopter_task::init(void)
 {
     bool success = true;
-    FlightController &f = Quadcopter::getInstance();
+    FlightController &f = mQuadcopter;
     const uint32_t loopFrequencyMs = 1000 / QUADCOPTER_SENSOR_FREQUENCY;
     const uint32_t escFrequencyMs  = 1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY;
 
-    /* Register the variable we want to preserve on the "disk" */
-    if (success) {
-        tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
-        if (success) success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
-    }
+    /* Set the PID's min and max PWM output along with the PID update rate */
+    const float pwmMinPercent = 0;
+    const float pwmMaxPercent = 100;
+    f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, escFrequencyMs);
 
     /* TODO: Set min/max according to the particular sensor */
-    if (success) {
-        const float pwmMinPercent = 0;
-        const float pwmMaxPercent = 100;
-        f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, escFrequencyMs);
+    f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+            f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
+           f.mMagnoSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
 
-        f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-                f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-               f.mMagnoSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-    }
-
-    // Do not update task statistics (stack usage) too frequently
-    setStatUpdateRate(1 * 60 * 1000);
+    // Do not update task statistics for this task since it may cause timing skew
+    setStatUpdateRate(0);
 
     // Set the frequency of run() method
     setRunDuration(loopFrequencyMs);
@@ -122,7 +117,22 @@ bool quadcopter_task::init(void)
 
 bool quadcopter_task::regTlm(void)
 {
-    return quadcopterRegisterTelemetry();
+    bool success = true;
+
+    /* Register all private variables of quadcopter class and its subclasses
+     * Only quadcopterRegisterTelemetry() method has access to the private variables.
+     */
+    if (success) {
+        success = quadcopterRegisterTelemetry();
+    }
+
+    /* Register the variable we want to preserve on the "disk" */
+    if (success) {
+        tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
+        success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
+    }
+
+    return success;
 }
 
 bool quadcopter_task::taskEntry(void)
@@ -130,47 +140,66 @@ bool quadcopter_task::taskEntry(void)
     bool success = true;
 
     /* "Disk" data is restored at this point, so we set it to the Quadcopter class */
-    Quadcopter::getInstance().setLowBatteryTriggerPercentage(mLowBatteryTriggerPercent);
+    mQuadcopter.setLowBatteryTriggerPercentage(mLowBatteryTriggerPercent);
 
     return success;
 }
 
 bool quadcopter_task::run(void *p)
 {
-    Quadcopter &q = Quadcopter::getInstance();
     const uint32_t millis = sys_get_uptime_ms();
 
     /* Detect any "call rate" skew in case we are not getting called at precise timings */
-    if (0 != mLastCallMs && (mLastCallMs + getRunDuration()) != millis)
-    {
-        if (!q.getTimingSkewedFlag())
-        {
-            LOG_ERROR("Quadcopter run() method was not called at precise timings");
-            LOG_ERROR("Expected %u ms, actual %u ms", (mLastCallMs + getRunDuration()), millis);
-        }
-        q.setTimingSkewedFlag(true);
-    }
-    mLastCallMs = millis;
+    detectTimingSkew(millis);
 
     /* TODO Update the sensor values */
 
     /* Figure out what the Quadcopter should do */
-    q.updateFlyLogic();
+    mQuadcopter.updateFlyLogic();
 
     /* Update the flight sensor system */
-    q.updateSensorData(millis);
+    mQuadcopter.updateSensorData(millis);
 
     /* Run the PID loop to apply propeller throttle values */
-    q.updatePropellerValues(millis);
+    mQuadcopter.updatePropellerValues(millis);
 
-    /* Update any status LEDs */
+    /* Update status LEDs periodically */
+    updateStatusLeds(millis);
+
+    return true;
+}
+
+void quadcopter_task::detectTimingSkew(const uint32_t millis)
+{
+    /* We don't want to mark the timing skew during the first call (mLastCallMs will be zero at that time) */
+    if (0 != mLastCallMs && (mLastCallMs + getRunDuration()) != millis)
+    {
+        const uint32_t maxLogMsgs = 10;
+        if (mQuadcopter.getTimingSkewedCount() < maxLogMsgs)
+        {
+            LOG_ERROR("Quadcopter run() method timing is skewed");
+            LOG_ERROR("Last call %u ms. This call: %u ms. Should have been %u ms.",
+                      mLastCallMs, millis, getRunDuration());
+        }
+        mQuadcopter.incrTimingSkewedCount();
+    }
+    mLastCallMs = millis;
+}
+
+void quadcopter_task::updateStatusLeds(const uint32_t millis)
+{
+    /* Enumeration of LED number (1-4) */
     enum {
         led_error = 1,
         led_gps = 2,
     };
 
-    LE.set(led_error, q.getTimingSkewedFlag());
-    LE.set(led_gps,   q.getGpsStatus());
+    /* Roughly update the LEDs at the rate givey by mLedUpdateRateMs */
+    if (millis > mNextLedUpdateTimeMs)
+    {
+        mNextLedUpdateTimeMs = millis + mLedUpdateRateMs;
 
-    return true;
+        LE.set(led_error, (mQuadcopter.getTimingSkewedCount() > 0) );
+        LE.set(led_gps,   mQuadcopter.getGpsStatus());
+    }
 }
