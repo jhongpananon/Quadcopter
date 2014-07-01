@@ -7,7 +7,7 @@
 
 
 /// The frequency of the ESC (electronic speed controller)
-#define ESC_FREQUENCY_HZ    100
+#define ESC_FREQUENCY_HZ    500
 
 
 

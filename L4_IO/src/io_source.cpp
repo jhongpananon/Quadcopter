@@ -334,6 +334,11 @@ void LED::off(int ledNum)
     mLedValue &= ~(1 << (ledNum-1));
     setAll(mLedValue);
 }
+void LED::set(int ledNum, bool o)
+{
+    if (o) on(ledNum);
+    else   off(ledNum);
+}
 void LED::setAll(char value)
 {
     mLedValue = value & 0x0F;

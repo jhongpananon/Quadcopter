@@ -55,6 +55,12 @@ class QuadcopterBase : public FlightController
          */
         void setCurrentGpsCoordinates(const gpsData_t& data);
 
+        /// Sets the GPS status if GPS has locked on or not
+        bool setGpsStatus(bool locked) { mGpsLocked = locked; }
+
+        /// @returns true if the GPS is receiving a signal
+        bool getGpsStatus(void) const  { return mGpsLocked; }
+
         /**
          * Set the destination coordinates to follow in autonomous mode
          * @param [in] data The GPS data
@@ -96,10 +102,20 @@ class QuadcopterBase : public FlightController
         void setRcReceiverStatus(bool isHealthy);
 
         /**
-         * Flies the Quadcopter based on all the input data
-         * @param   timeNowMs The current time in milliseconds. This is used to run the PID algorithms
+         * @{ Gets and sets the timing skewed flag
          */
-        void fly(const uint32_t timeNowMs);
+        inline void setTimingSkewedFlag(bool flag)  { mTimingSkewed = flag; }
+        inline bool getTimingSkewedFlag(void) const { return mTimingSkewed; }
+        /** @} */
+
+        /// Processes the flying logic to apply the flight parameters to the flight controller
+        void updateFlyLogic(void);
+
+        /// Updates the sensor system
+        void updateSensorData(const uint32_t timeNowMs);
+
+        /// Updates the propeller values
+        void updatePropellerValues(const uint32_t timeNowMs);
 
     protected:
         /// Protected constructor of this abstract class
@@ -131,10 +147,19 @@ class QuadcopterBase : public FlightController
 
         bool mRcReceiverIsHealthy;              ///< If valid input is being given by RC receiver remote
         bool mKillSwitchEngaged;                ///< Flag if kill switch has been engaged
+
+        /**
+         * Flag if timing of calling function is skewed
+         * This is set by the user manually and this class merely provides the API to get and set
+         * this flag.
+         */
+        bool mTimingSkewed;
+
         flightParams_t mRequestedFlightParams;  ///< Flight parameters being requested by the user (RC receiver)
 
         gpsData_t mCurrentGps;                  ///< Current GPS coordinates of the Quadcopter
         gpsData_t mDestinationGps;              ///< Destination GPS coordinates of the Quadcopter
+        bool mGpsLocked;                        ///< GPS lock status
 
         // Allow private member access to register variables' telemetry
         ALLOW_FRIEND_TO_REGISTER_TLM();

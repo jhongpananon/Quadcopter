@@ -131,6 +131,9 @@ bool terminalTask::taskEntry()
                                                      "'pid roll 1 0.5 0' : Set ROLL parameters\n"
                                                      "'pid yaw 1 0.5 0' : Set YAW parameters\n");
 
+    CMD_HANDLER_FUNC(quadcopterPidLogHandler);
+    cp.addHandler(quadcopterPidLogHandler, "qlog", "Enable or disable Quadcopter logging: \n"
+                                                   "'qlog pid on' or 'qlog pid off'");
 
     // Initialize Interrupt driven version of getchar & putchar
     Uart0& uart0 = Uart0::getInstance();

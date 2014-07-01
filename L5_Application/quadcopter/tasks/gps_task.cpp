@@ -42,6 +42,7 @@ bool gps_task::init(void)
 
 bool gps_task::run(void *p)
 {
+    Quadcopter &q = Quadcopter::getInstance();
     const uint32_t maxGpsStringLen = 192;
     char buffer[maxGpsStringLen] = { 0 };
 
@@ -57,6 +58,7 @@ bool gps_task::run(void *p)
         if (0 == (periodicLog++ % periodSeconds)) {
             LOG_ERROR("GPS data not received within %u ms", gpsTimeoutMs);
         }
+        q.setGpsStatus(false);
     }
     else {
         /* Parse the GPS string */
@@ -89,7 +91,12 @@ bool gps_task::run(void *p)
             Quadcopter::gpsData_t gpsData;
             gpsData.latitude = atof(latitude);
             gpsData.longitude = atof(longitude);
-            Quadcopter::getInstance().setCurrentGpsCoordinates(gpsData);
+
+            q.setCurrentGpsCoordinates(gpsData);
+
+            const uint32_t minSatsForLock = 3;
+            const bool locked = atoi(numSatellites) >= minSatsForLock;
+            q.setGpsStatus(locked);
         }
     }
 

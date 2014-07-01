@@ -37,6 +37,11 @@ class quadcopter_task : public scheduler_task
          * This is saved on the disk, and set on the Quadcopter class
          */
         uint8_t mLowBatteryTriggerPercent;
+
+        /**
+         * The timestamp of last call to the run() method
+         */
+        uint32_t mLastCallMs;
 };
 
 

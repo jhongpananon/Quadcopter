@@ -287,6 +287,9 @@ class scheduler_task
          */
         inline void setRunDuration(uint32_t milliseconds) { mTaskDelayMs = milliseconds; }
 
+        /// @returns the run duration set by setRunDuration()
+        inline uint32_t getRunDuration(void) const { return mTaskDelayMs; }
+
     #if (0 != configUSE_QUEUE_SETS)
         /**
          * Initialize the queue set to block on multiple queues and/or semaphores.

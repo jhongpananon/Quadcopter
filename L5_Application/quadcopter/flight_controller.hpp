@@ -104,6 +104,13 @@ class FlightController : public MotorControllerIface
         /// @returns The current flight angles computed by the sensors
         inline flightYPR_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
 
+        /**
+         * Enables or Disables PID value logging
+         * @param enable        If true, PID logging is enabled
+         * @param frequencyMs   The maximum frequency to log the messages
+         */
+        void enablePidIoLogging(bool enable, uint32_t frequencyMs);
+
     /* Next set of protected methods are meant to be called by the parent class */
     protected:
         /**
@@ -156,6 +163,9 @@ class FlightController : public MotorControllerIface
         PID mPitchPid;  ///< PID for pitch control
         PID mRollPid;   ///< PID for roll
         PID mYawPid;    ///< PID for yaw
+
+        bool mLogPidValues;         ///< Flag to either log PID input/output or not
+        uint32_t mLogFrequencyMs;   ///< The log frequency in milliseconds
 
         // Allow private member access to register variables' telemetry
         ALLOW_FRIEND_TO_REGISTER_TLM();

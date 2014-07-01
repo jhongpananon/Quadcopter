@@ -4,6 +4,7 @@
 
 #include "command_handler.hpp"
 #include "quadcopter.hpp"
+#include "file_logger.h"
 
 
 
@@ -53,6 +54,36 @@ CMD_HANDLER_FUNC(quadcopterPidChangeHandler)
     if (NULL != pAxisName)
     {
         output.printf("Set %s PID parameters to: %f(kp) %f(ki) %f(kd)\n", pAxisName, params.kp, params.ki, params.kd);
+    }
+
+    return handled;
+}
+
+CMD_HANDLER_FUNC(quadcopterPidLogHandler)
+{
+    bool handled = true;
+
+    if (cmdParams.beginsWithIgnoreCase("status"))
+    {
+        output.printf("Blocked logger calls: %i\n", logger_get_blocked_call_count());
+    }
+    else if (cmdParams.beginsWithIgnoreCase("pid"))
+    {
+        bool enable = cmdParams.containsIgnoreCase("on");
+
+        const uint32_t minMs = 10;
+        uint32_t ms = 0;
+        cmdParams.scanf("%*s %u", &ms);
+        if (ms < minMs) {
+            ms = minMs;
+        }
+
+        Quadcopter::getInstance().enablePidIoLogging(enable, ms);
+        output.printf("%s PID logging every %u ms\n", enable ? "Enabled" : "Disabled", ms);
+    }
+    else
+    {
+        handled = false;
     }
 
     return handled;

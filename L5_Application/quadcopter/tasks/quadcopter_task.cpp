@@ -6,6 +6,8 @@
 #include "quad_tasks.hpp"
 #include "lpc_sys.h"
 #include "shared_handles.h"
+
+#include "io.hpp"
 #include "file_logger.h"
 #include "c_tlm_var.h"
 
@@ -14,8 +16,11 @@
 /// Define the stack size this task is estimated to use
 #define QUADCOPTER_TASK_STACK_BYTES        (3 * 512)
 
-/// Define the frequency of updating sensors and flying the quadcopter
-#define QUADCOPTER_LOOP_FREQUENCY_HZ       (250)
+/// Define the frequency of updating sensors and running the AHRS sensor loop
+#define QUADCOPTER_SENSOR_FREQUENCY       (250)
+
+/// Define the frequency at which the ESC (electronic speed controllers) will update
+#define QUADCOPTER_ESC_UPDATE_FREQUENCY   (125)
 
 
 
@@ -76,7 +81,8 @@ bool quadcopterRegisterTelemetry(void)
 
 quadcopter_task::quadcopter_task(const uint8_t priority) :
     scheduler_task("quadcopter", QUADCOPTER_TASK_STACK_BYTES, priority),
-    mLowBatteryTriggerPercent(20)
+    mLowBatteryTriggerPercent(20),
+    mLastCallMs(0)
 {
     /* Use init() for memory allocation */
 }
@@ -85,7 +91,8 @@ bool quadcopter_task::init(void)
 {
     bool success = true;
     FlightController &f = Quadcopter::getInstance();
-    const uint32_t loopFrequencyMs = 1000 / QUADCOPTER_LOOP_FREQUENCY_HZ;
+    const uint32_t loopFrequencyMs = 1000 / QUADCOPTER_SENSOR_FREQUENCY;
+    const uint32_t escFrequencyMs  = 1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY;
 
     /* Register the variable we want to preserve on the "disk" */
     if (success) {
@@ -97,7 +104,7 @@ bool quadcopter_task::init(void)
     if (success) {
         const float pwmMinPercent = 0;
         const float pwmMaxPercent = 100;
-        f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, loopFrequencyMs);
+        f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, escFrequencyMs);
 
         f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
                 f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
@@ -115,10 +122,7 @@ bool quadcopter_task::init(void)
 
 bool quadcopter_task::regTlm(void)
 {
-
-    bool success = quadcopterRegisterTelemetry();
-
-    return true;
+    return quadcopterRegisterTelemetry();
 }
 
 bool quadcopter_task::taskEntry(void)
@@ -134,11 +138,38 @@ bool quadcopter_task::taskEntry(void)
 bool quadcopter_task::run(void *p)
 {
     Quadcopter &q = Quadcopter::getInstance();
+    const uint32_t millis = sys_get_uptime_ms();
+
+    /* Detect any "call rate" skew in case we are not getting called at precise timings */
+    if (0 != mLastCallMs && (mLastCallMs + getRunDuration()) != millis)
+    {
+        if (!q.getTimingSkewedFlag())
+        {
+            LOG_ERROR("Quadcopter run() method was not called at precise timings");
+        }
+        q.setTimingSkewedFlag(true);
+    }
+    mLastCallMs = millis;
 
     /* TODO Update the sensor values */
 
-    /* Fly the quadcopter :) */
-    q.fly(sys_get_uptime_ms());
+    /* Figure out what the Quadcopter should do */
+    q.updateFlyLogic();
+
+    /* Update the flight sensor system */
+    q.updateSensorData(millis);
+
+    /* Run the PID loop to apply propeller throttle values */
+    q.updatePropellerValues(millis);
+
+    /* Update any status LEDs */
+    enum {
+        led_error = 1,
+        led_gps = 2,
+    };
+
+    LE.set(led_error, q.getTimingSkewedFlag());
+    LE.set(led_gps,   q.getGpsStatus());
 
     return true;
 }

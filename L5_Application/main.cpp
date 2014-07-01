@@ -104,7 +104,7 @@ int main(void)
     scheduler_add_task(new terminalTask(PRIORITY_HIGH));
 
     /* Quadcopter tasks should be the highest priority to process the flight controller algorithms */
-    scheduler_add_task(new quadcopter_task(PRIORITY_HIGH));
+    scheduler_add_task(new quadcopter_task(PRIORITY_CRITICAL));
 
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
      *
@@ -123,10 +123,10 @@ int main(void)
     scheduler_add_task(new battery_monitor_task (PRIORITY_LOW));
 
     /* Consumes very little CPU, but need highest priority to handle mesh network ACKs */
-    scheduler_add_task(new wirelessTask(PRIORITY_CRITICAL));
+    scheduler_add_task(new wirelessTask(PRIORITY_HIGH));
 
     /* Finally, the kill-switch task with high priority */
-    scheduler_add_task(new kill_switch_task(PRIORITY_CRITICAL));
+    scheduler_add_task(new kill_switch_task(PRIORITY_HIGH));
 
     /* No need for IR remote control task */
     // scheduler_add_task(new remoteTask  (PRIORITY_LOW));

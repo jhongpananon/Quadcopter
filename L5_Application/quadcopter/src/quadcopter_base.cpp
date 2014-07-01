@@ -15,7 +15,9 @@ QuadcopterBase::QuadcopterBase() :
     mBatteryPercentage(100),            /* Assume 100% until changed otherwise */
     mLowBatteryTriggerPercentage(20),   /* Default to 20% until changed otherwise */
     mRcReceiverIsHealthy(true),         /* Assume receiver is healthy until changed */
-    mKillSwitchEngaged(false)
+    mKillSwitchEngaged(false),
+    mTimingSkewed(false),
+    mGpsLocked(false)
 {
     memset(&mCurrentGps, sizeof(mCurrentGps), 0);
     memset(&mDestinationGps, sizeof(mDestinationGps), 0);
@@ -73,7 +75,7 @@ void QuadcopterBase::setRcReceiverStatus(bool isHealthy)
     mRcReceiverIsHealthy = isHealthy;
 }
 
-void QuadcopterBase::fly(const uint32_t timeNowMs)
+void QuadcopterBase::updateFlyLogic(void)
 {
     /* Ideas are documented here, need to collaborate and discuss:
      *
@@ -133,12 +135,19 @@ void QuadcopterBase::fly(const uint32_t timeNowMs)
             break;
     }
 
+}
+
+void QuadcopterBase::updateSensorData(const uint32_t timeNowMs)
+{
     /* Run the filters on the raw input received by the flight controller */
     runSensorInputFilters();
 
     /* Now compute PRY from the sensor inputs */
     computePitchRollYawValues();
+}
 
+void QuadcopterBase::updatePropellerValues(const uint32_t timeNowMs)
+{
     /* Using the PID algorithms, compute the throttle values for each propeller */
     computeThrottleValues(timeNowMs);
 
