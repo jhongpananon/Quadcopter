@@ -10,8 +10,7 @@
 
 
 FlightController::FlightController() :
-    mLogPidValues(false),
-    mLogFrequencyMs(100)
+    mLogFrequencyMs(0)
 {
     memset(&mFlightControllerAngles, 0, sizeof(mFlightControllerAngles));
     memset(&mCurrentAngles, 0, sizeof(mCurrentAngles));
@@ -28,9 +27,8 @@ void FlightController::setCommonPidParameters(float minOutputValue, float maxOut
     mYawPid.setSampleTime(pidUpdateTimeMs);
 }
 
-void FlightController::enablePidIoLogging(bool enable, uint32_t frequencyMs)
+void FlightController::enablePidIoLogging(uint32_t frequencyMs)
 {
-    mLogPidValues = enable;
     mLogFrequencyMs = frequencyMs;
 }
 
@@ -56,19 +54,17 @@ void FlightController::computeThrottleValues(const uint32_t timeNowMs)
 
     /* Do not log the data at frequency higher than mLogFrequencyMs */
     static uint32_t lastTimeMs = 0;
-    if (mLogPidValues && (timeNowMs - lastTimeMs) > mLogFrequencyMs)
+    if (0 != mLogFrequencyMs && (timeNowMs - lastTimeMs) >= mLogFrequencyMs)
     {
         /* Maintain frequency.  So if caller rate is every 4ms, and frequency is 10ms, then
          * we want to log the message at 12, 20, 32, 40 ms etc (about every 10ms)
+         *
+         * 4 -->  8 --> 12 = LOG
+         *       16 --> 20 = LOG
+         * 24 -> 28 --> 32 = LOG
+         *       36 --> 40 = LOG
          */
-        lastTimeMs -= timeNowMs;
-
-        /* If we are not getting called precisely, for example, instead of every 4ms, say we got
-         * called at 4, 20, 24, 28, 32 etc. then we want to log at 20, and 32
-         */
-        if (lastTimeMs > mLogFrequencyMs) {
-            lastTimeMs = 0;
-        }
+        lastTimeMs = timeNowMs - (timeNowMs % mLogFrequencyMs);
 
         LOG_INFO_SIMPLE("%i,%i,%.1f,%i,%i,%.1f,%i,%i,%.1f",
                 (int)mFlightControllerAngles.angle.pitch, (int)mCurrentAngles.pitch, pitchThrottle,

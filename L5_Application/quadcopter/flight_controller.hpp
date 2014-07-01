@@ -106,10 +106,9 @@ class FlightController : public MotorControllerIface
 
         /**
          * Enables or Disables PID value logging
-         * @param enable        If true, PID logging is enabled
-         * @param frequencyMs   The maximum frequency to log the messages
+         * @param frequencyMs   The maximum frequency to log the messages (0 to turn it off)
          */
-        void enablePidIoLogging(bool enable, uint32_t frequencyMs);
+        void enablePidIoLogging(uint32_t frequencyMs);
 
     /* Next set of protected methods are meant to be called by the parent class */
     protected:
@@ -164,7 +163,6 @@ class FlightController : public MotorControllerIface
         PID mRollPid;   ///< PID for roll
         PID mYawPid;    ///< PID for yaw
 
-        bool mLogPidValues;         ///< Flag to either log PID input/output or not
         uint32_t mLogFrequencyMs;   ///< The log frequency in milliseconds
 
         // Allow private member access to register variables' telemetry

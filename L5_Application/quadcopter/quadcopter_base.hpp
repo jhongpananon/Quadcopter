@@ -56,7 +56,7 @@ class QuadcopterBase : public FlightController
         void setCurrentGpsCoordinates(const gpsData_t& data);
 
         /// Sets the GPS status if GPS has locked on or not
-        bool setGpsStatus(bool locked) { mGpsLocked = locked; }
+        void setGpsStatus(bool locked) { mGpsLocked = locked; }
 
         /// @returns true if the GPS is receiving a signal
         bool getGpsStatus(void) const  { return mGpsLocked; }

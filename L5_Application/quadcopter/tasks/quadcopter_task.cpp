@@ -146,6 +146,7 @@ bool quadcopter_task::run(void *p)
         if (!q.getTimingSkewedFlag())
         {
             LOG_ERROR("Quadcopter run() method was not called at precise timings");
+            LOG_ERROR("Expected %u ms, actual %u ms", (mLastCallMs + getRunDuration()), millis);
         }
         q.setTimingSkewedFlag(true);
     }

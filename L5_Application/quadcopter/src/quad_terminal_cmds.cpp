@@ -69,17 +69,15 @@ CMD_HANDLER_FUNC(quadcopterPidLogHandler)
     }
     else if (cmdParams.beginsWithIgnoreCase("pid"))
     {
-        bool enable = cmdParams.containsIgnoreCase("on");
-
-        const uint32_t minMs = 10;
+        const uint32_t minMs = 20;
         uint32_t ms = 0;
         cmdParams.scanf("%*s %u", &ms);
-        if (ms < minMs) {
+        if (ms > 0 && ms < minMs) {
             ms = minMs;
         }
 
-        Quadcopter::getInstance().enablePidIoLogging(enable, ms);
-        output.printf("%s PID logging every %u ms\n", enable ? "Enabled" : "Disabled", ms);
+        Quadcopter::getInstance().enablePidIoLogging(ms);
+        output.printf("%s PID logging every %u ms\n", (ms > 0) ? "Enabled" : "Disabled", ms);
     }
     else
     {
