@@ -179,7 +179,7 @@ void quadcopter_task::detectTimingSkew(const uint32_t millis)
         {
             LOG_ERROR("Quadcopter run() method timing is skewed");
             LOG_ERROR("Last call %u ms. This call: %u ms. Should have been %u ms.",
-                      mLastCallMs, millis, getRunDuration());
+                      mLastCallMs, millis, (millis + getRunDuration()));
         }
         mQuadcopter.incrTimingSkewedCount();
     }
