@@ -118,6 +118,9 @@ class rc_remote_task : public scheduler_task
          */
         int8_t getNormalizedValue(const uint32_t &pulseWidthUs);
 
+        /// Instance of the quadcopter
+        Quadcopter &mQuadcopter;
+
         /// The flight parameters being decoded from RC receiver
         Quadcopter::flightParams_t mFlightCommand;
 

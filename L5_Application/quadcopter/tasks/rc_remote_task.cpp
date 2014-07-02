@@ -136,7 +136,8 @@ static void ch6_falling_isr(void) { channel_n_falling_edge(rc_chan6);          }
 
 
 rc_remote_task::rc_remote_task(const uint8_t priority) :
-    scheduler_task("rcrx", RC_RX_TASK_STACK_BYTES, priority)
+    scheduler_task("rcrx", RC_RX_TASK_STACK_BYTES, priority),
+    mQuadcopter(Quadcopter::getInstance())
 {
     /* Use init() for memory allocation */
     memset(&mFlightCommand, sizeof(mFlightCommand), 0);
@@ -208,7 +209,7 @@ bool rc_remote_task::run(void *p)
 
         /* Tell the Quadcopter class that the RC receiver has failed */
         const bool healthy = false;
-        Quadcopter::getInstance().setRcReceiverStatus(healthy);
+        mQuadcopter.setRcReceiverStatus(healthy);
 
         /* XXX Returning false to suspend the task until RC receiver is attached */
         return false;
@@ -246,8 +247,8 @@ bool rc_remote_task::run(void *p)
 
             /* Since we have all the inputs, set them all to the flight controller */
             const bool healthy = true;
-            Quadcopter::getInstance().setRcReceiverStatus(healthy);
-            Quadcopter::getInstance().setFlightControl(mFlightCommand);
+            mQuadcopter.setRcReceiverStatus(healthy);
+            mQuadcopter.setFlightControl(mFlightCommand);
 
             /* Reset the parameters so we don't use stale values next time */
             memset(&mFlightCommand, sizeof(mFlightCommand), 0);
