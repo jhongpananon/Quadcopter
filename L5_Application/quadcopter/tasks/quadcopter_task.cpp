@@ -194,7 +194,7 @@ void quadcopter_task::updateStatusLeds(const uint32_t millis)
         led_gps = 2,
     };
 
-    /* Roughly update the LEDs at the rate givey by mLedUpdateRateMs */
+    /* Roughly update the LEDs at the rate given by mLedUpdateRateMs */
     if (millis > mNextLedUpdateTimeMs)
     {
         mNextLedUpdateTimeMs = millis + mLedUpdateRateMs;

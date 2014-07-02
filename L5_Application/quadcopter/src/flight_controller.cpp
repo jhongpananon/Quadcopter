@@ -25,6 +25,13 @@ void FlightController::setCommonPidParameters(float minOutputValue, float maxOut
     mPitchPid.setSampleTime(pidUpdateTimeMs);
     mRollPid.setSampleTime(pidUpdateTimeMs);
     mYawPid.setSampleTime(pidUpdateTimeMs);
+
+    /* Once all the PID parameters are set, turn on the PID
+     * TODO : Get the latest input instead of feeding zeroes
+     */
+    mPitchPid.setMode(PID::pid_automatic, 0);
+    mRollPid.setMode(PID::pid_automatic, 0);
+    mYawPid.setMode(PID::pid_automatic, 0);
 }
 
 void FlightController::enablePidIoLogging(uint32_t frequencyMs)
