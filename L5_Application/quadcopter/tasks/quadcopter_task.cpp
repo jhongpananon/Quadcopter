@@ -19,7 +19,11 @@
 /// Define the frequency of updating sensors and running the AHRS sensor loop
 #define QUADCOPTER_SENSOR_FREQUENCY       (250)
 
-/// Define the frequency at which the ESC (electronic speed controllers) will update
+/**
+ * Define the frequency at which the ESC (electronic speed controllers) will update.
+ * This should not be faster than the sensor frequency.  ESCs can usually go from 50-400Hz.
+ * 100Hz is ideal for a Quadcopter, while > 100Hz may provide smoother operation.
+ */
 #define QUADCOPTER_ESC_UPDATE_FREQUENCY   (125)
 
 
@@ -84,7 +88,8 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
     mQuadcopter(Quadcopter::getInstance()),
     mLowBatteryTriggerPercent(20),
     mLastCallMs(0),
-    mNextLedUpdateTimeMs(0)
+    mHighestLoopTimeUs(0),
+    mLastPidUpdateTimeMs(0)
 {
     /* Use init() for memory allocation */
 }
@@ -132,6 +137,12 @@ bool quadcopter_task::regTlm(void)
         success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
     }
 
+    /* Register any debug counters */
+    if (success) {
+        tlm_component *dbg = tlm_component_get_by_name("debug");
+        success = TLM_REG_VAR(dbg, mHighestLoopTimeUs, tlm_uint);
+    }
+
     return success;
 }
 
@@ -148,23 +159,42 @@ bool quadcopter_task::taskEntry(void)
 bool quadcopter_task::run(void *p)
 {
     const uint32_t millis = sys_get_uptime_ms();
+    const uint32_t loopStart = sys_get_high_res_timer_us();
+    const uint32_t pidUpdateTimeMs = (1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY);
 
     /* Detect any "call rate" skew in case we are not getting called at precise timings */
     detectTimingSkew(millis);
 
     /* TODO Update the sensor values */
 
-    /* Figure out what the Quadcopter should do */
-    mQuadcopter.updateFlyLogic();
-
-    /* Update the flight sensor system */
+    /* Update the flight sensor system to update AHRS (pitch, roll, and yaw values) */
     mQuadcopter.updateSensorData(millis);
 
-    /* Run the PID loop to apply propeller throttle values */
-    mQuadcopter.updatePropellerValues(millis);
+    /* We apply our flying logic, and update propeller values at ideally slower rate
+     * than the sensors.  The ESCs cannot respond faster than about 400Hz anyway.
+     */
+    if ((millis - mLastPidUpdateTimeMs) >= pidUpdateTimeMs)
+    {
+        mLastPidUpdateTimeMs = millis;
 
-    /* Update status LEDs periodically */
-    updateStatusLeds(millis);
+        /* Figure out what the Quadcopter should do */
+        mQuadcopter.updateFlyLogic();
+
+        /* Run the PID loop to apply propeller values */
+        mQuadcopter.updatePropellerValues(millis);
+    }
+    /* Do other stuff in a different cycle to not overlap with PID processing time */
+    else
+    {
+        updateStatusLeds();
+    }
+
+    /* Capture and store the highest time we spend in our Quadcopter logic's loop */
+    const uint32_t loopEnd = sys_get_high_res_timer_us();
+    const uint32_t diff = (loopEnd - loopStart);
+    if (mHighestLoopTimeUs < diff) {
+        mHighestLoopTimeUs = diff;
+    }
 
     return true;
 }
@@ -186,7 +216,7 @@ void quadcopter_task::detectTimingSkew(const uint32_t millis)
     mLastCallMs = millis;
 }
 
-void quadcopter_task::updateStatusLeds(const uint32_t millis)
+void quadcopter_task::updateStatusLeds(void)
 {
     /* Enumeration of LED number (1-4) */
     enum {
@@ -194,12 +224,6 @@ void quadcopter_task::updateStatusLeds(const uint32_t millis)
         led_gps = 2,
     };
 
-    /* Roughly update the LEDs at the rate given by mLedUpdateRateMs */
-    if (millis > mNextLedUpdateTimeMs)
-    {
-        mNextLedUpdateTimeMs = millis + mLedUpdateRateMs;
-
-        LE.set(led_error, (mQuadcopter.getTimingSkewedCount() > 0) );
-        LE.set(led_gps,   mQuadcopter.getGpsStatus());
-    }
+    LE.set(led_error, (mQuadcopter.getTimingSkewedCount() > 0) );
+    LE.set(led_gps,   mQuadcopter.getGpsStatus());
 }

@@ -38,7 +38,7 @@ class quadcopter_task : public scheduler_task
         void detectTimingSkew(const uint32_t millis);
 
         /// Updates the status LEDs of the quadcopter
-        void updateStatusLeds(const uint32_t millis);
+        void updateStatusLeds(void);
 
         /// Instance of the quadcopter
         Quadcopter &mQuadcopter;
@@ -52,11 +52,11 @@ class quadcopter_task : public scheduler_task
         /// The timestamp of last call to the run() method
         uint32_t mLastCallMs;
 
-        /// Timings at which the status LEDs will update
-        static const uint32_t mLedUpdateRateMs = 250;
+        /// Tracks highest micro-seconds spent in the run() method
+        uint32_t mHighestLoopTimeUs;
 
-        /// Time time at which point the status LEDs will update
-        uint32_t mNextLedUpdateTimeMs;
+        /// Time at which point we will update the PID and propeller values
+        uint32_t mLastPidUpdateTimeMs;
 };
 
 
