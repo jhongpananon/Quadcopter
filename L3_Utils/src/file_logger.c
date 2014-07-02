@@ -141,7 +141,7 @@ static void logger_init(void)
         xQueueSendFromISR(g_empty_buffer_queue, &ptr, NULL);
     }
 
-    xTaskCreate(logger_task, "logger", FILE_LOGGER_STACK_SIZE, NULL, PRIORITY_LOW, NULL);
+    xTaskCreate(logger_task, "logger", FILE_LOGGER_STACK_SIZE, NULL, FILE_LOGGER_OS_PRIORITY, NULL);
 }
 
 void logger_send_flush_request(void)

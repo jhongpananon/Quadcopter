@@ -100,11 +100,20 @@ int main(void)
     /* Log a message to initialize the logger task and log the time of startup */
     LOG_INFO_SIMPLE("System Startup");
 
-    /* Terminal task needs high priority to access the system in case a task gets stuck */
-    scheduler_add_task(new terminalTask(PRIORITY_HIGH));
+    /* Quadcopter task should be the highest priority to process the flight controller algorithms
+     * Nothing should be equal or above this priority because we do not want this task to ever
+     * be preempted by another task.
+     */
+    scheduler_add_task(new quadcopter_task(priority_6));
 
-    /* Quadcopter tasks should be the highest priority to process the flight controller algorithms */
-    scheduler_add_task(new quadcopter_task(PRIORITY_CRITICAL));
+    /* Consumes very little CPU, but needs high priority to handle mesh network ACKs */
+    scheduler_add_task(new wirelessTask(priority_5));
+
+    /* The kill-switch task with high priority (consumes very little CPU) */
+    scheduler_add_task(new kill_switch_task(priority_5));
+
+    /* Terminal task needs high priority to access the system in case a task gets stuck */
+    scheduler_add_task(new terminalTask(priority_4));
 
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
      *
@@ -116,17 +125,13 @@ int main(void)
      * per millisecond.  So a 100 char string would take 25ms, so 100 sized queue should be
      * good enough such that this task won't need any CPU for 25ms.
      */
-    scheduler_add_task(new gps_task       (PRIORITY_MEDIUM, &gpsUart));
-    scheduler_add_task(new rc_remote_task (PRIORITY_MEDIUM));
+    scheduler_add_task(new gps_task       (priority_3, &gpsUart));
+    scheduler_add_task(new rc_remote_task (priority_3));
 
     /* Low priority tasks are designed to only execute if there is any CPU left */
-    scheduler_add_task(new battery_monitor_task (PRIORITY_LOW));
+    scheduler_add_task(new battery_monitor_task (priority_2));
 
-    /* Consumes very little CPU, but need highest priority to handle mesh network ACKs */
-    scheduler_add_task(new wirelessTask(PRIORITY_HIGH));
-
-    /* Finally, the kill-switch task with high priority */
-    scheduler_add_task(new kill_switch_task(PRIORITY_HIGH));
+    /* Priority 1 is the absolute lowest priority; it is the CPU IDLE task priority */
 
     /* No need for IR remote control task */
     // scheduler_add_task(new remoteTask  (PRIORITY_LOW));
