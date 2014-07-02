@@ -66,7 +66,7 @@ bool gps_task::run(void *p)
         const char *split = ",";
         const char *stringId = strtok_r(&buffer[0], split, &savePtr);
 
-        if (stringId == strstr(stringId, "$GPGGA"))
+        if (0 == strcmp(stringId, "$GPGGA"))
         {
             const char *utcOfPosition = strtok_r(NULL, split, &savePtr);
             const char *latitude      = strtok_r(NULL, split, &savePtr);
