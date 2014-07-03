@@ -193,4 +193,13 @@ class kill_switch_task : public scheduler_task
     protected:
     private:
         kill_switch_task(); ///< Disallow default constructor (no code is defined)
+
+        /**
+         * The wireless command types (first byte of wireless packet)
+         */
+        typedef enum {
+            wscmd_kill    = 0,
+            wscmd_arm     = 1,
+            wscmd_disarm  = 2,
+        } wirelessCmd_t;
 };

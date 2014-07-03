@@ -221,9 +221,11 @@ void quadcopter_task::updateStatusLeds(void)
     /* Enumeration of LED number (1-4) */
     enum {
         led_error = 1,
-        led_gps = 2,
+        led_armDisarm = 2,
+        led_gps = 3,
     };
 
-    LE.set(led_error, (mQuadcopter.getTimingSkewedCount() > 0) );
-    LE.set(led_gps,   mQuadcopter.getGpsStatus());
+    LE.set(led_error,     (mQuadcopter.getTimingSkewedCount() > 0) );
+    LE.set(led_armDisarm, mQuadcopter.getArmed());
+    LE.set(led_gps,       mQuadcopter.getGpsStatus());
 }
