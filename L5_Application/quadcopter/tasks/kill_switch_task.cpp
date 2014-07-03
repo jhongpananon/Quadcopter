@@ -17,7 +17,7 @@
 #define KILL_SWITCH_BUTTON_PRESSED()        SW.getSwitch(1)
 
 /// Define the ARM/DISARM button API
-#define ARM_DISARM_SWITCH_BUTTON_PRESSED()  SW.getSwitch(1)
+#define ARM_DISARM_SWITCH_BUTTON_PRESSED()  SW.getSwitch(2)
 
 
 
