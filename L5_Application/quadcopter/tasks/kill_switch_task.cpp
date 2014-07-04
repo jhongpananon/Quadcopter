@@ -11,7 +11,7 @@
 
 
 /// Define the stack size this task is estimated to use
-#define KILL_SWITCH_TASK_STACK_BYTES        (3 * 512)
+#define KILL_SWITCH_TASK_STACK_BYTES        (2 * 512)
 
 /// Define the kill switch button API
 #define KILL_SWITCH_BUTTON_PRESSED()        SW.getSwitch(1)

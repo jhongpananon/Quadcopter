@@ -14,7 +14,7 @@
 
 /**
  * The motor controller interface
- * This is an abstract class that FlightController calls to set the propeller motor throttle values.
+ * This is an abstract class that FlightStabilizer calls to set the propeller motor throttle values.
  */
 class MotorControllerIface
 {
@@ -61,7 +61,7 @@ class MotorControllerIface
  * This allows the user to set the raw sensor values, process them, and apply
  * the user input to be able to fly the Quadcopter.
  */
-class FlightController : public MotorControllerIface
+class FlightStabilizer : public MotorControllerIface
 {
     /* Public types */
     public:
@@ -70,12 +70,16 @@ class FlightController : public MotorControllerIface
             int16_t pitch;   ///< Pitch angle
             int16_t roll;    ///< Roll angle
             int16_t yaw;     ///< Yaw angle
-        } flightYPR_t;
+
+            void operator=(int num) { pitch = roll = yaw = num; }
+        } flightPRY_t;
 
         /// Common structure used for pitch, roll, yaw, and throttle values
         typedef struct {
-            flightYPR_t angle;  /// Pitch, roll, and yaw angles
+            flightPRY_t angle;  /// Pitch, roll, and yaw angles
             uint8_t throttle;   ///< Throttle value
+
+            void operator=(int num) { angle = num; throttle = num; }
         } flightParams_t;
 
     public:
@@ -111,7 +115,7 @@ class FlightController : public MotorControllerIface
         inline bool getArmed(void) const { return mArmed;  }
 
         /// @returns The current flight angles computed by the sensors
-        inline flightYPR_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
+        inline flightPRY_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
 
         /**
          * Enables or Disables PID value logging
@@ -154,7 +158,7 @@ class FlightController : public MotorControllerIface
 
     protected:
         /// Protected constructor of this abstract class
-        FlightController();
+        FlightStabilizer();
 
         /**
          * API to set flight parameters
@@ -167,7 +171,7 @@ class FlightController : public MotorControllerIface
 
     private:
         flightParams_t mFlightControllerAngles;  ///< Input flight parameters
-        flightYPR_t mCurrentAngles;              ///< The current flight angles
+        flightPRY_t mCurrentAngles;              ///< The current flight angles
 
         PID mPitchPid;  ///< PID for pitch control
         PID mRollPid;   ///< PID for roll

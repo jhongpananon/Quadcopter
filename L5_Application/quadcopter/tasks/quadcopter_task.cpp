@@ -13,8 +13,9 @@
 #include "c_tlm_var.h"
 
 
+
 /// Define the stack size this task is estimated to use
-#define QUADCOPTER_TASK_STACK_BYTES        (3 * 512)
+#define QUADCOPTER_TASK_STACK_BYTES       (4 * 512)
 
 /// Define the frequency of updating sensors and running the AHRS sensor loop
 #define QUADCOPTER_SENSOR_FREQUENCY       (250)
@@ -35,8 +36,12 @@ bool quadcopterRegisterTelemetry(void)
     const char * tlmName = "quadcopter_vars";
     Quadcopter &q = Quadcopter::getInstance();
     tlm_component *quad = tlm_component_get_by_name(tlmName);
+    tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
 
-    /* If telemetry component not found, then create it */
+    /* If telemetry component not found, then create it
+     * When task telemetry is enabled, "quadcopter" component would already exist, so using
+     * that name for tlmName fails telemetry registration, this needs to be investigated
+     */
     if (NULL == quad) {
         quad = tlm_component_add(tlmName);
     }
@@ -46,24 +51,26 @@ bool quadcopterRegisterTelemetry(void)
 
     // Quick hack to register variables
     #define TLM_REG_QUAD_VAR(name, var, type) \
-                tlm_variable_register(quad, name, &(var), sizeof(var), 1, type);
+                tlm_variable_register(quad, name, &(var), sizeof(var), 1, type)
+    #define TLM_REG_DISK_QUAD_VAR(name, var, type) \
+            tlm_variable_register(disk, name, &(var), sizeof(var), 1, type)
 
     /* Register Pitch, Roll, and Yaw axis PIDs.
      * These shouldn't be directly modified by the user through telemetry because the PID
      * class manipulates these based on the timings.  terminal command should be used instead
      * to safely modify these parameters.
      */
-    if (success) success = TLM_REG_QUAD_VAR("pid_pitch_kp", q.mPitchPid.mPidParams.kp, tlm_float);
-    if (success) success = TLM_REG_QUAD_VAR("pid_pitch_ki", q.mPitchPid.mPidParams.ki, tlm_float);
-    if (success) success = TLM_REG_QUAD_VAR("pid_pitch_kd", q.mPitchPid.mPidParams.kd, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_pitch_kp", q.mPitchPid.mPidParams.kp, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_pitch_ki", q.mPitchPid.mPidParams.ki, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_pitch_kd", q.mPitchPid.mPidParams.kd, tlm_float);
 
-    if (success) success = TLM_REG_QUAD_VAR("pid_roll_kp", q.mRollPid.mPidParams.kp, tlm_float);
-    if (success) success = TLM_REG_QUAD_VAR("pid_roll_ki", q.mRollPid.mPidParams.ki, tlm_float);
-    if (success) success = TLM_REG_QUAD_VAR("pid_roll_kd", q.mRollPid.mPidParams.kd, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_roll_kp", q.mRollPid.mPidParams.kp, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_roll_ki", q.mRollPid.mPidParams.ki, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_roll_kd", q.mRollPid.mPidParams.kd, tlm_float);
 
-    if (success) success = TLM_REG_QUAD_VAR("pid_yaw_kp", q.mYawPid.mPidParams.kp, tlm_float);
-    if (success) success = TLM_REG_QUAD_VAR("pid_yaw_ki", q.mYawPid.mPidParams.ki, tlm_float);
-    if (success) success = TLM_REG_QUAD_VAR("pid_yaw_kd", q.mYawPid.mPidParams.kd, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_yaw_kp", q.mYawPid.mPidParams.kp, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_yaw_ki", q.mYawPid.mPidParams.ki, tlm_float);
+    if (success) success = TLM_REG_DISK_QUAD_VAR("pid_yaw_kd", q.mYawPid.mPidParams.kd, tlm_float);
 
     /* Register the current angles being computed */
     if (success) success = TLM_REG_QUAD_VAR("current_pitch", q.mCurrentAngles.pitch, tlm_int);
@@ -82,21 +89,21 @@ bool quadcopterRegisterTelemetry(void)
 
     /* Register float array of current and destination GPS coordinates */
     if (success) {
-        success = tlm_variable_register(quad, "current_gps_long_lat",
-                                        &(q.mCurrentGps), sizeof(q.mCurrentGps), 2, tlm_float);
+        success = tlm_variable_register(quad, "gps_current_long_lat_alt",
+                                        &(q.mCurrentGps), sizeof(q.mCurrentGps), 3, tlm_float);
     }
     if (success) {
-        success = tlm_variable_register(quad, "dst_gps_long_lat",
-                                        &(q.mDestinationGps), sizeof(q.mDestinationGps), 2, tlm_float);
+        success = tlm_variable_register(quad, "gps_dst_long_lat_alt",
+                                        &(q.mDestinationGps), sizeof(q.mDestinationGps), 3, tlm_float);
     }
 
-    /* Register miscalleneous flags and counters */
+    /* Register miscellaneous flags and counters */
     if (success) success = TLM_REG_QUAD_VAR("gps_locked", q.mGpsLocked, tlm_bit_or_bool);
-    if (success) success = TLM_REG_QUAD_VAR("rc_rx_ok", q.mRcReceiverIsHealthy, tlm_bit_or_bool);
+    if (success) success = TLM_REG_QUAD_VAR("rc_recv_ok", q.mRcReceiverIsHealthy, tlm_bit_or_bool);
     if (success) success = TLM_REG_QUAD_VAR("kill_switch", q.mKillSwitchEngaged, tlm_bit_or_bool);
     if (success) success = TLM_REG_QUAD_VAR("timing_skew_cnt", q.mTimingSkewedCount, tlm_uint);
-    if (success) success = TLM_REG_QUAD_VAR("battery_low_trigger", q.mLowBatteryTriggerPercentage, tlm_uint);
-    if (success) success = TLM_REG_QUAD_VAR("battery_percentage", q.mBatteryPercentage, tlm_uint);
+    if (success) success = TLM_REG_QUAD_VAR("batt_low_trigger", q.mLowBatteryTriggerPercentage, tlm_uint);
+    if (success) success = TLM_REG_QUAD_VAR("batt_percentage",  q.mBatteryPercentage, tlm_uint);
 
     return success;
 }
@@ -105,9 +112,11 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
     scheduler_task("quadcopter", QUADCOPTER_TASK_STACK_BYTES, priority),
     mQuadcopter(Quadcopter::getInstance()),
     mLowBatteryTriggerPercent(20),
-    mLastCallMs(0),
     mHighestLoopTimeUs(0),
-    mLastPidUpdateTimeMs(0)
+    mLastCallMs(0),
+    mLastPidUpdateTimeMs(0),
+    mSensorPollFrequencyMs(1000 / QUADCOPTER_SENSOR_FREQUENCY),
+    mEscUpdateFrequencyMs(1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY)
 {
     /* Use init() for memory allocation */
 }
@@ -115,14 +124,12 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
 bool quadcopter_task::init(void)
 {
     bool success = true;
-    FlightController &f = mQuadcopter;
-    const uint32_t loopFrequencyMs = 1000 / QUADCOPTER_SENSOR_FREQUENCY;
-    const uint32_t escFrequencyMs  = 1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY;
+    FlightStabilizer &f = mQuadcopter;
 
     /* Set the PID's min and max PWM output along with the PID update rate */
     const float pwmMinPercent = 0;
     const float pwmMaxPercent = 100;
-    f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, escFrequencyMs);
+    f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, mEscUpdateFrequencyMs);
 
     /* TODO: Set min/max according to the particular sensor */
     f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
@@ -132,8 +139,8 @@ bool quadcopter_task::init(void)
     // Do not update task statistics for this task since it may cause timing skew
     setStatUpdateRate(0);
 
-    // Set the frequency of run() method
-    setRunDuration(loopFrequencyMs);
+    // Set the frequency of the run() method
+    setRunDuration(mSensorPollFrequencyMs);
 
     return success;
 }
@@ -176,22 +183,22 @@ bool quadcopter_task::taskEntry(void)
 
 bool quadcopter_task::run(void *p)
 {
-    const uint32_t millis = sys_get_uptime_ms();
     const uint32_t loopStart = sys_get_high_res_timer_us();
-    const uint32_t pidUpdateTimeMs = (1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY);
+    const uint32_t millis = sys_get_uptime_ms();
 
     /* Detect any "call rate" skew in case we are not getting called at precise timings */
     detectTimingSkew(millis);
 
-    /* TODO Update the sensor values */
+    /* Get the sensor inputs */
+    getSensorInputs();
 
     /* Update the flight sensor system to update AHRS (pitch, roll, and yaw values) */
-    mQuadcopter.updateSensorData(millis);
+    mQuadcopter.processSensorData(millis);
 
     /* We apply our flying logic, and update propeller values at ideally slower rate
      * than the sensors.  The ESCs cannot respond faster than about 400Hz anyway.
      */
-    if ((millis - mLastPidUpdateTimeMs) >= pidUpdateTimeMs)
+    if ((millis - mLastPidUpdateTimeMs) >= mEscUpdateFrequencyMs)
     {
         mLastPidUpdateTimeMs = millis;
 
@@ -217,6 +224,18 @@ bool quadcopter_task::run(void *p)
     return true;
 }
 
+void quadcopter_task::getSensorInputs(void)
+{
+    /* TODO Update the sensor values */
+
+    /* Remove this, it was just used to see how long the loop cycle would take while
+     * reading some data over I2C
+     */
+    (void) AS.getX();
+    (void) AS.getY();
+    (void) AS.getZ();
+}
+
 void quadcopter_task::detectTimingSkew(const uint32_t millis)
 {
     /* We don't want to mark the timing skew during the first call (mLastCallMs will be zero at that time).
@@ -231,8 +250,7 @@ void quadcopter_task::detectTimingSkew(const uint32_t millis)
         const uint32_t maxLogMsgs = 10;
         if (mQuadcopter.getTimingSkewedCount() < maxLogMsgs)
         {
-            LOG_ERROR("Quadcopter run() method timing is skewed");
-            LOG_ERROR("Timing Skew: Last call %u ms. This call: %u ms. Should have been %u ms.",
+            LOG_ERROR("Quadcopter timing skew: Last call %u ms. This call: %u ms, needed %u ms",
                       mLastCallMs, millis, (mLastCallMs + getRunDuration()));
         }
         mQuadcopter.incrTimingSkewedCount();
@@ -244,12 +262,22 @@ void quadcopter_task::updateStatusLeds(void)
 {
     /* Enumeration of LED number (1-4) */
     enum {
-        led_error = 1,
+        led_all       = 0xff,
+        led_error     = 1,
         led_armDisarm = 2,
-        led_gps = 3,
+        led_gps       = 3,
+        led_spare     = 4, /* Available for an indication LED */
     };
 
-    LE.set(led_error,     (mQuadcopter.getTimingSkewedCount() > 0) );
-    LE.set(led_armDisarm, mQuadcopter.getArmed());
-    LE.set(led_gps,       mQuadcopter.getGpsStatus());
+    /* Light up all LEDs if the kill switch has been engaged */
+    if (mQuadcopter.isKillSwitchEngaged())
+    {
+        LE.setAll(led_all);
+    }
+    else
+    {
+        LE.set(led_error,     (mQuadcopter.getTimingSkewedCount() > 0) );
+        LE.set(led_armDisarm, mQuadcopter.getArmed());
+        LE.set(led_gps,       mQuadcopter.getGpsStatus());
+    }
 }

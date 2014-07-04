@@ -16,12 +16,13 @@ QuadcopterBase::QuadcopterBase() :
     mLowBatteryTriggerPercentage(20),   /* Default to 20% until changed otherwise */
     mRcReceiverIsHealthy(true),         /* Assume receiver is healthy until changed */
     mKillSwitchEngaged(false),
-    mTimingSkewedCount(0),
-    mGpsLocked(false)
+    mGpsLocked(false),
+    mPressureSensorAltitude(0),
+    mTimingSkewedCount(0)
 {
-    memset(&mCurrentGps, 0, sizeof(mCurrentGps));
-    memset(&mDestinationGps, 0, sizeof(mDestinationGps));
-    memset(&mRequestedFlightParams, 0, sizeof(mRequestedFlightParams));
+    mCurrentGps = 0;
+    mDestinationGps = 0;
+    mRequestedFlightParams = 0;
 }
 
 void QuadcopterBase::setBatteryPercentage(uint8_t batteryPercent)
@@ -91,7 +92,7 @@ void QuadcopterBase::updateFlyLogic(void)
         case imode_auto_mode_follow_gps:
 
         case imode_full_manual:
-            FlightController::setFlightParameters(mRequestedFlightParams);
+            FlightStabilizer::setFlightParameters(mRequestedFlightParams);
             break;
 
         case imode_invalid:
@@ -102,7 +103,7 @@ void QuadcopterBase::updateFlyLogic(void)
 
 }
 
-void QuadcopterBase::updateSensorData(const uint32_t timeNowMs)
+void QuadcopterBase::processSensorData(const uint32_t timeNowMs)
 {
     /* Run the filters on the raw input received by the flight controller */
     runSensorInputFilters();

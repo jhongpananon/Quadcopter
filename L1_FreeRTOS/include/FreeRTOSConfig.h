@@ -73,7 +73,7 @@
 
 #define configCPU_CLOCK_HZ			            (DESIRED_CPU_CLOCK)
 #define configTICK_RATE_HZ			            ( 500 )
-#define configMAX_PRIORITIES			        ( 6 )
+#define configMAX_PRIORITIES			        ( 10 )
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 
 
@@ -90,7 +90,7 @@
     #define PRIORITY_MEDIUM     1
     #define PRIORITY_HIGH       2
     #define PRIORITY_CRITICAL 	3
-#elif (configMAX_PRIORITIES == 6)
+#elif (configMAX_PRIORITIES == 10)
     typedef enum {
         priority_1 = 0,
         priority_2,
@@ -98,6 +98,10 @@
         priority_4,
         priority_5,
         priority_6,
+        priority_7,
+        priority_8,
+        priority_9,
+        priority_10,
     } os_priorities_t;
 #else
 #error "Invalid priorities configured"

@@ -11,7 +11,7 @@
 #include "lpc_timers.h"
 #include "eint.h"
 
-#include "flight_controller.hpp"
+#include "flight_stabilizer.hpp"
 #include "shared_handles.h"
 #include "file_logger.h"
 
@@ -140,7 +140,7 @@ rc_remote_task::rc_remote_task(const uint8_t priority) :
     mQuadcopter(Quadcopter::getInstance())
 {
     /* Use init() for memory allocation */
-    memset(&mFlightCommand, 0, sizeof(mFlightCommand));
+    mRcRxFlightCmd = 0;
 }
 
 bool rc_remote_task::init(void)
@@ -177,8 +177,8 @@ bool rc_remote_task::init(void)
 #endif
     }
 
-    // Do not update task statistics (stack usage) too frequently
-    setStatUpdateRate(5 * 60 * 1000);
+    // Do not update task statistics (stack usage)
+    setStatUpdateRate(0);
 
     return success;
 }
@@ -199,7 +199,7 @@ int8_t rc_remote_task::getNormalizedValue(const uint32_t &pulseWidthUs)
 bool rc_remote_task::run(void *p)
 {
     const TickType_t timeout = OS_MS(1000);
-    const uint8_t noiseMicroSeconds = 10;
+    const uint8_t noiseMicroSeconds = 25;
     rc_receiver_pulse_t channelData;
 
     /* Wait for queue data to be sent */
@@ -228,29 +228,29 @@ bool rc_remote_task::run(void *p)
     switch (channelData.channel)
     {
         case rc_chan1_pitch:
-            mFlightCommand.angle.pitch = getNormalizedValue(channelData.pulse_time_us);
+            mRcRxFlightCmd.angle.pitch = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan2_roll:
-            mFlightCommand.angle.roll = getNormalizedValue(channelData.pulse_time_us);
+            mRcRxFlightCmd.angle.roll = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan3_yaw:
-            mFlightCommand.angle.yaw = getNormalizedValue(channelData.pulse_time_us);
+            mRcRxFlightCmd.angle.yaw = getNormalizedValue(channelData.pulse_time_us);
             break;
 
         case rc_chan4_throttle:
         {
             /* Convert normalized data from -100->+100 to 0->100 */
-            mFlightCommand.throttle = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
+            mRcRxFlightCmd.throttle = (uint8_t) ((int16_t) getNormalizedValue(channelData.pulse_time_us) + 100) / 2;
 
             /* Since we have all the inputs, set them all to the flight controller */
             const bool healthy = true;
             mQuadcopter.setRcReceiverStatus(healthy);
-            mQuadcopter.setFlightControl(mFlightCommand);
+            mQuadcopter.setFlightControl(mRcRxFlightCmd);
 
             /* Reset the parameters so we don't use stale values next time */
-            memset(&mFlightCommand, 0, sizeof(mFlightCommand));
+            mRcRxFlightCmd = 0;
 
             break;
         }
@@ -258,6 +258,7 @@ bool rc_remote_task::run(void *p)
         case rc_chan5:
         case rc_chan6:
         default:
+            LOG_ERROR("Invalid case");
             break;
     }
 

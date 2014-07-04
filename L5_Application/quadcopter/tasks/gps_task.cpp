@@ -34,8 +34,8 @@ bool gps_task::init(void)
         /* Init something here */
     }
 
-    // Do not update task statistics (stack usage) too frequently
-    setStatUpdateRate(5 * 60 * 1000);
+    // Do not update task statistics (stack usage)
+    setStatUpdateRate(0);
 
     return success;
 }
@@ -73,6 +73,7 @@ bool gps_task::run(void *p)
             const char *northOrSouth  = strtok_r(NULL, split, &savePtr);
             const char *longitude     = strtok_r(NULL, split, &savePtr);
             const char *eastOrWest    = strtok_r(NULL, split, &savePtr);
+            const char *gpsQuality    = strtok_r(NULL, split, &savePtr);
             const char *numSatellites = strtok_r(NULL, split, &savePtr);
             const char *horizontalDil = strtok_r(NULL, split, &savePtr);
             const char *altitude      = strtok_r(NULL, split, &savePtr);
@@ -83,14 +84,16 @@ bool gps_task::run(void *p)
             (void) northOrSouth;
             (void) longitude;
             (void) eastOrWest;
+            (void) gpsQuality;
             (void) numSatellites;
             (void) horizontalDil;
             (void) altitude;
 
             /* Set the GPS data on the Quadcopter class */
             Quadcopter::gpsData_t gpsData;
-            gpsData.latitude = atof(latitude);
+            gpsData.latitude  = atof(latitude);
             gpsData.longitude = atof(longitude);
+            gpsData.altMeters = atof(altitude);
             q.setCurrentGpsCoordinates(gpsData);
 
             const int minSatsForLock = 3;
