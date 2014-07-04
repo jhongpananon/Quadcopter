@@ -6,11 +6,18 @@
 
 #include "file_logger.h"
 #include "wireless.h"
+#include "io.hpp"
 
 
 
 /// Define the stack size this task is estimated to use
 #define KILL_SWITCH_TASK_STACK_BYTES        (3 * 512)
+
+/// Define the kill switch button API
+#define KILL_SWITCH_BUTTON_PRESSED()        SW.getSwitch(1)
+
+/// Define the ARM/DISARM button API
+#define ARM_DISARM_SWITCH_BUTTON_PRESSED()  SW.getSwitch(2)
 
 
 
@@ -28,8 +35,8 @@ bool kill_switch_task::init(void)
         /* Init something here */
     }
 
-    // Do not update task statistics (stack usage) too frequently
-    setStatUpdateRate(5 * 60 * 1000);
+    // Do not update task statistics (stack usage)
+    setStatUpdateRate(0);
 
     return success;
 }
@@ -37,11 +44,35 @@ bool kill_switch_task::init(void)
 bool kill_switch_task::run(void *p)
 {
     mesh_packet_t pkt;
+    const uint32_t wirelessPktPollMs = 100;
+    Quadcopter &q = Quadcopter::getInstance();
 
-    if (wireless_get_rx_pkt(&pkt, portMAX_DELAY))
+    if (wireless_get_rx_pkt(&pkt, wirelessPktPollMs))
     {
-        Quadcopter::getInstance().engageKillSwitch();
-        LOG_WARN("Kill switch issued");
+        switch (pkt.data[0])
+        {
+            case wscmd_arm:
+                q.setArmed(true);
+                break;
+
+            case wscmd_disarm:
+                q.setArmed(false);
+                break;
+
+            case wscmd_kill:
+            default:
+                q.engageKillSwitch();
+                break;
+        }
+    }
+
+    if (KILL_SWITCH_BUTTON_PRESSED())
+    {
+        q.engageKillSwitch();
+    }
+    if (ARM_DISARM_SWITCH_BUTTON_PRESSED())
+    {
+        q.setArmed(!q.getArmed());
     }
 
     return true;

@@ -92,6 +92,9 @@ class QuadcopterBase : public FlightController
 
         /**
          * Engages the "kill switch"
+         * @note This may have a similar effect of disarming the FlightController, but the
+         *       key difference is that there is no way of "disengaging" kill switch, while
+         *       ARM and DISARM can be performed any time.
          */
         inline void engageKillSwitch(void) { mKillSwitchEngaged = true; }
 

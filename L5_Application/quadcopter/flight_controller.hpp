@@ -101,6 +101,15 @@ class FlightController : public MotorControllerIface
         void setCommonPidParameters(float minOutputValue, float maxOutputValue, uint32_t pidUpdateTimeMs);
         /** @} */
 
+        /**
+         * Activates or deactivates the flight controller.
+         * If the flight controller is already running, disarming will IMMEDIATELY turn off the propellers
+         */
+        void setArmed(bool armed);
+
+        /// @returns true if the flight controller is armed
+        inline bool getArmed(void) const { return mArmed;  }
+
         /// @returns The current flight angles computed by the sensors
         inline flightYPR_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
 
@@ -139,8 +148,9 @@ class FlightController : public MotorControllerIface
          * Applies the propeller values to the motors.
          * This calls the subclass method to retrieve its set values, and then calls
          * its virtual method to apply them.
+         * @note If the flight controller is not armed, zero flight values will be applied.
          */
-        inline void applyPropellerValues(void) { applyMotorValues(getMotorValues()); }
+        void applyPropellerValues(void) ;
 
     protected:
         /// Protected constructor of this abstract class
@@ -163,6 +173,7 @@ class FlightController : public MotorControllerIface
         PID mRollPid;   ///< PID for roll
         PID mYawPid;    ///< PID for yaw
 
+        bool mArmed;                ///< Flag if the quadcopter is armed
         uint32_t mLogFrequencyMs;   ///< The log frequency in milliseconds
 
         // Allow private member access to register variables' telemetry

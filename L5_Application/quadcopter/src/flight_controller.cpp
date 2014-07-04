@@ -10,6 +10,7 @@
 
 
 FlightController::FlightController() :
+    mArmed(false),
     mLogFrequencyMs(0)
 {
     memset(&mFlightControllerAngles, 0, sizeof(mFlightControllerAngles));
@@ -25,13 +26,20 @@ void FlightController::setCommonPidParameters(float minOutputValue, float maxOut
     mPitchPid.setSampleTime(pidUpdateTimeMs);
     mRollPid.setSampleTime(pidUpdateTimeMs);
     mYawPid.setSampleTime(pidUpdateTimeMs);
+}
 
-    /* Once all the PID parameters are set, turn on the PID
-     * TODO : Get the latest input instead of feeding zeroes
+void FlightController::setArmed(bool armed)
+{
+    mArmed = armed;
+
+    /* When we are suddenly "ARMED", we don't want our PID to spike its output, so
+     * we politely turn it on by using the latest value
      */
-    mPitchPid.setMode(PID::pid_automatic, 0);
-    mRollPid.setMode(PID::pid_automatic, 0);
-    mYawPid.setMode(PID::pid_automatic, 0);
+    const PID::pidMode_t pidMode = mArmed ? PID::pid_automatic : PID::pid_manual;
+
+    mPitchPid.setMode(pidMode, mCurrentAngles.pitch);
+    mRollPid.setMode(pidMode, mCurrentAngles.roll);
+    mYawPid.setMode(pidMode, mCurrentAngles.yaw);
 }
 
 void FlightController::enablePidIoLogging(uint32_t frequencyMs)
@@ -101,4 +109,18 @@ void FlightController::computeThrottleValues(const uint32_t timeNowMs)
     (void) yawThrottle; // Avoid the unused variable warning for now
 
     saveMotorValues(values);
+}
+
+void FlightController::applyPropellerValues(void)
+{
+    MotorControllerIface::motorValues_t values = { 0 };
+
+    /* If we are armed, only then retrieve the values saved to the motor controller
+     * interface through the saveMotorvalues()
+     */
+    if (mArmed) {
+        values = getMotorValues();
+    }
+
+    applyMotorValues(values);
 }
