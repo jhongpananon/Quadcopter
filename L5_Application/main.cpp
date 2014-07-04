@@ -104,16 +104,16 @@ int main(void)
      * Nothing should be equal or above this priority because we do not want this task to ever
      * be preempted by another task.
      */
-    scheduler_add_task(new quadcopter_task(priority_6));
+    scheduler_add_task(new quadcopter_task (priority_6));
 
     /* Consumes very little CPU, but needs high priority to handle mesh network ACKs */
-    scheduler_add_task(new wirelessTask(priority_5));
+    scheduler_add_task(new wirelessTask    (priority_5));
 
     /* The kill-switch task with high priority (consumes very little CPU) */
     scheduler_add_task(new kill_switch_task(priority_5));
 
     /* Terminal task needs high priority to access the system in case a task gets stuck */
-    scheduler_add_task(new terminalTask(priority_4));
+    scheduler_add_task(new terminalTask    (priority_4));
 
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
      *

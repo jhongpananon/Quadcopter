@@ -140,8 +140,7 @@ rc_remote_task::rc_remote_task(const uint8_t priority) :
     mQuadcopter(Quadcopter::getInstance())
 {
     /* Use init() for memory allocation */
-    memset(&mFlightCommand, sizeof(mFlightCommand), 0);
-
+    memset(&mFlightCommand, 0, sizeof(mFlightCommand));
 }
 
 bool rc_remote_task::init(void)
@@ -251,7 +250,7 @@ bool rc_remote_task::run(void *p)
             mQuadcopter.setFlightControl(mFlightCommand);
 
             /* Reset the parameters so we don't use stale values next time */
-            memset(&mFlightCommand, sizeof(mFlightCommand), 0);
+            memset(&mFlightCommand, 0, sizeof(mFlightCommand));
 
             break;
         }

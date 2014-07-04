@@ -19,9 +19,9 @@ QuadcopterBase::QuadcopterBase() :
     mTimingSkewedCount(0),
     mGpsLocked(false)
 {
-    memset(&mCurrentGps, sizeof(mCurrentGps), 0);
-    memset(&mDestinationGps, sizeof(mDestinationGps), 0);
-    memset(&mRequestedFlightParams, sizeof(mRequestedFlightParams), 0);
+    memset(&mCurrentGps, 0, sizeof(mCurrentGps));
+    memset(&mDestinationGps, 0, sizeof(mDestinationGps));
+    memset(&mRequestedFlightParams, 0, sizeof(mRequestedFlightParams));
 }
 
 void QuadcopterBase::setBatteryPercentage(uint8_t batteryPercent)

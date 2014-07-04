@@ -32,8 +32,8 @@ battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     mHighestMilliVolts(-1 * 1000),    /* A really low voltage, it will be reset upon actual voltage sensed */
     mMilliVoltDeltaToLog(0.1 * 1000), /* Default configuration to log data if voltage changes */
     mPrevMilliVolts(0),
-    /* We need to see battery go through at least 1 volt of delta to determine its charge */
-    mMinimumDeltaMilliVoltsForValidPercent(0.5 * 1000),
+    /* We *possibly* need to see battery go through at least 1 volt of delta to determine its charge */
+    mMinimumDeltaMilliVoltsForValidPercent(2.5 * 1000),
     mAdcSamples(mNumAdcSamplesBeforeVoltageUpdate)
 {
     /* Use init() for memory allocation */

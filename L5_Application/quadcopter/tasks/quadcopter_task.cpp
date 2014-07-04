@@ -80,6 +80,24 @@ bool quadcopterRegisterTelemetry(void)
     if (success) success = TLM_REG_QUAD_VAR("applied_roll",  q.mFlightControllerAngles.angle.roll, tlm_int);
     if (success) success = TLM_REG_QUAD_VAR("applied_yaw",   q.mFlightControllerAngles.angle.yaw, tlm_int);
 
+    /* Register float array of current and destination GPS coordinates */
+    if (success) {
+        success = tlm_variable_register(quad, "current_gps_long_lat",
+                                        &(q.mCurrentGps), sizeof(q.mCurrentGps), 2, tlm_float);
+    }
+    if (success) {
+        success = tlm_variable_register(quad, "dst_gps_long_lat",
+                                        &(q.mDestinationGps), sizeof(q.mDestinationGps), 2, tlm_float);
+    }
+
+    /* Register miscalleneous flags and counters */
+    if (success) success = TLM_REG_QUAD_VAR("gps_locked", q.mGpsLocked, tlm_bit_or_bool);
+    if (success) success = TLM_REG_QUAD_VAR("rc_rx_ok", q.mRcReceiverIsHealthy, tlm_bit_or_bool);
+    if (success) success = TLM_REG_QUAD_VAR("kill_switch", q.mKillSwitchEngaged, tlm_bit_or_bool);
+    if (success) success = TLM_REG_QUAD_VAR("timing_skew_cnt", q.mTimingSkewedCount, tlm_uint);
+    if (success) success = TLM_REG_QUAD_VAR("battery_low_trigger", q.mLowBatteryTriggerPercentage, tlm_uint);
+    if (success) success = TLM_REG_QUAD_VAR("battery_percentage", q.mBatteryPercentage, tlm_uint);
+
     return success;
 }
 
@@ -201,15 +219,21 @@ bool quadcopter_task::run(void *p)
 
 void quadcopter_task::detectTimingSkew(const uint32_t millis)
 {
-    /* We don't want to mark the timing skew during the first call (mLastCallMs will be zero at that time) */
-    if (0 != mLastCallMs && (mLastCallMs + getRunDuration()) != millis)
+    /* We don't want to mark the timing skew during the first call (mLastCallMs will be zero at that time).
+     *
+     * For example, if the last call was at 4ms, and the run duration was 4ms, and if the next call is at >= 9,
+     * then there is timing skew.  It was observed that sometimes, possibly due to imprecise timing to get
+     * the millisecond counter, the call was made before the runtime, such as at 7ms instead of 8ms so this
+     * is okay.
+     */
+    if (0 != mLastCallMs && millis > (mLastCallMs + getRunDuration()) )
     {
         const uint32_t maxLogMsgs = 10;
         if (mQuadcopter.getTimingSkewedCount() < maxLogMsgs)
         {
             LOG_ERROR("Quadcopter run() method timing is skewed");
-            LOG_ERROR("Last call %u ms. This call: %u ms. Should have been %u ms.",
-                      mLastCallMs, millis, (millis + getRunDuration()));
+            LOG_ERROR("Timing Skew: Last call %u ms. This call: %u ms. Should have been %u ms.",
+                      mLastCallMs, millis, (mLastCallMs + getRunDuration()));
         }
         mQuadcopter.incrTimingSkewedCount();
     }
