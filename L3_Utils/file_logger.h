@@ -49,14 +49,14 @@ extern "C" {
  * the data buffer to the file.  So in an event when no logging calls occur and
  * there is data in the buffer, we will write it to the file after this time.
  */
-#define FILE_LOGGER_BUFFER_SIZE      (4 * 512)   ///< Recommend multiples of 512
-#define FILE_LOGGER_MSG_BUFFERS      20          ///< Number of buffers (need to have enough while file is being written)
-#define FILE_LOGGER_MSG_MAX_LEN      144         ///< Max length of a log message
-#define FILE_LOGGER_FILENAME         "log.csv"   ///< Destination filename
-#define FILE_LOGGER_STACK_SIZE       (1200 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
-#define FILE_LOGGER_OS_PRIORITY      ( 0 )       ///< Task priority of logger task
-#define FILE_LOGGER_FLUSH_TIMEOUT    (1 * 60)    ///< Logs are flushed after this time
-#define FILE_LOGGER_BLOCK_TIME_MS    (10)        ///< If no buffer available within this time, block time counter will increment
+#define FILE_LOGGER_BUFFER_SIZE      (4 * 512)      ///< Recommend multiples of 512
+#define FILE_LOGGER_MSG_BUFFERS      20             ///< Number of buffers (need to have enough while file is being written)
+#define FILE_LOGGER_MSG_MAX_LEN      144            ///< Max length of a log message
+#define FILE_LOGGER_FILENAME         "log.csv"      ///< Destination filename
+#define FILE_LOGGER_STACK_SIZE       (512 * 4 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
+#define FILE_LOGGER_OS_PRIORITY      ( 0 )          ///< Task priority of logger task
+#define FILE_LOGGER_FLUSH_TIMEOUT    (1 * 60)       ///< Logs are flushed after this time
+#define FILE_LOGGER_BLOCK_TIME_MS    (10)           ///< If no buffer available within this time, block time counter will increment
 /** @} */
 
 

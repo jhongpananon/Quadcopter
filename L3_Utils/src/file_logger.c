@@ -46,16 +46,30 @@ static bool logger_write_to_file(const uint32_t bytes_to_write)
     bool success = false;
     UINT bytes_written = 0;
     UINT bytes_to_write_dword = bytes_to_write;
+    unsigned int err = 0;
 
     if (0 == bytes_to_write_dword) {
         success = true;
     }
-    else if (FR_OK == f_open(&file, FILE_LOGGER_FILENAME, FA_OPEN_ALWAYS | FA_WRITE))
+    else if (FR_OK == (err = f_open(&file, FILE_LOGGER_FILENAME, FA_OPEN_ALWAYS | FA_WRITE)))
     {
-        f_lseek(&file, f_size(&file));
-        f_write(&file, gp_file_buffer, bytes_to_write, &bytes_to_write_dword);
+        if (FR_OK == (err = f_lseek(&file, file.fsize))) {
+            if (FR_OK != (err = f_write(&file, gp_file_buffer, bytes_to_write, &bytes_written))) {
+                printf("File failed to be written: ");
+            }
+        }
+        else {
+            printf("File failed to seek to %u: ", file.fsize);
+        }
         f_close(&file);
         success = (bytes_written == bytes_to_write);
+    }
+    else {
+        printf("File failed to open: ");
+    }
+
+    if (!success) {
+        printf("Error %u writing logfile. %u/%u written\n", err, bytes_written, bytes_to_write);
     }
 
     return success;
