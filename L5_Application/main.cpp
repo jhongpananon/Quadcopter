@@ -47,15 +47,15 @@
  *  P2.4    Available (reserved) PWM
  *  P2.5    Available (reserved) PWM
  *
+ *  Port 2 supports interrupts that can be used to capture RC receiver inputs.
+ *  P2.6    RC-Ch5 (available) CAP1.0 - can also be used for timer CAPTURE with OR'd RC input design
+ *  P2.7    RC-Ch6 (available)
+ *
  *  Port 0 supports interrupts, so for additional interrupt(s), we can use:
  *  P0.0    RC-Ch1 - Pitch
  *  P0.1    RC-Ch2 - Roll
  *  P0.29   RC-Ch3 - Yaw
  *  P0.30   RC-Ch4 - Throttle
- *
- *  Port 2 supports interrupts that can be used to capture RC receiver inputs.
- *  P2.6    RC-Ch5 (available) CAP1.0 - can also be used for timer CAPTURE with OR'd RC input design
- *  P2.7    RC-Ch6 (available)
  *
  *  UART2 is routed to the Xbee socket
  *  P2.8    Uart2 Tx --> Bluetooth
@@ -104,16 +104,22 @@ int main(void)
      * Nothing should be equal or above this priority because we do not want this task to ever
      * be preempted by another task.
      */
-    scheduler_add_task(new quadcopter_task(priority_6));
+    scheduler_add_task(new quadcopter_task (priority_10));
 
-    /* Consumes very little CPU, but needs high priority to handle mesh network ACKs */
-    scheduler_add_task(new wirelessTask(priority_5));
+    /* Priority 9 available, possibly for pressure sensor computations */
 
     /* The kill-switch task with high priority (consumes very little CPU) */
-    scheduler_add_task(new kill_switch_task(priority_5));
+    scheduler_add_task(new kill_switch_task(priority_8));
+
+    /* Consumes very little CPU, but needs high priority to handle mesh network ACKs */
+    scheduler_add_task(new wirelessTask    (priority_7));
+
+    /* Priority 6 available */
 
     /* Terminal task needs high priority to access the system in case a task gets stuck */
-    scheduler_add_task(new terminalTask(priority_4));
+    scheduler_add_task(new terminalTask    (priority_5));
+
+    /* Priority 4 available */
 
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
      *

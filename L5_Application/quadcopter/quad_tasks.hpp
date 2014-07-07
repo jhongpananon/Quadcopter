@@ -17,7 +17,7 @@
 /**
  * This is the Quadcopter OS task.
  * This processes the raw sensor values through various filters, and applies
- * the flight controller inputs to fly the quadcopter.
+ * the flight controller inputs to fly the Quadcopter.
  *
  * @ingroup Quadcopter Tasks
  */
@@ -34,13 +34,16 @@ class quadcopter_task : public scheduler_task
     private:
         quadcopter_task(); ///< Disallow default constructor (no code is defined)
 
+        /// Gets the raw sensor inputs
+        void getSensorInputs(void);
+
         /// Detects and logs timing skew information
         void detectTimingSkew(const uint32_t millis);
 
-        /// Updates the status LEDs of the quadcopter
+        /// Updates the status LEDs of the Quadcopter
         void updateStatusLeds(void);
 
-        /// Instance of the quadcopter
+        /// Instance of the Quadcopter
         Quadcopter &mQuadcopter;
 
         /**
@@ -49,14 +52,20 @@ class quadcopter_task : public scheduler_task
          */
         uint8_t mLowBatteryTriggerPercent;
 
+        /// Tracks highest micro-seconds spent in the run() method
+        uint16_t mHighestLoopTimeUs;
+
         /// The timestamp of last call to the run() method
         uint32_t mLastCallMs;
 
-        /// Tracks highest micro-seconds spent in the run() method
-        uint32_t mHighestLoopTimeUs;
-
         /// Time at which point we will update the PID and propeller values
         uint32_t mLastPidUpdateTimeMs;
+
+        /// Frequency at which sensor inputs will be obtained to calculate pitch, roll, and yaw
+        const uint32_t mSensorPollFrequencyMs;
+
+        /// Frequency at which propellers (ESCs) will be updated
+        const uint32_t mEscUpdateFrequencyMs;
 };
 
 
@@ -122,7 +131,7 @@ class rc_remote_task : public scheduler_task
         Quadcopter &mQuadcopter;
 
         /// The flight parameters being decoded from RC receiver
-        Quadcopter::flightParams_t mFlightCommand;
+        Quadcopter::flightParams_t mRcRxFlightCmd;
 
         /// The maximum pulse width of a single channel in microseconds
         static const uint32_t mscMaxPulseWidthUs = 2 * 1000;
@@ -167,13 +176,13 @@ class battery_monitor_task : public scheduler_task
         Sampler<uint32_t> mAdcSamples;
 
         /// The frequency at which we collect the samples in milliseconds
-        static const int mSampleFrequencyMs = 250;
+        static const int mscSampleFrequencyMs = 250;
 
         /**
          * The number of samples to take before we average it and use it to compute the voltage
          * 250 * 12 = 3 seconds
          */
-        static const int mNumAdcSamplesBeforeVoltageUpdate = 12;
+        static const int mscNumAdcSamplesBeforeVoltageUpdate = 12;
 };
 
 
@@ -195,7 +204,7 @@ class kill_switch_task : public scheduler_task
         kill_switch_task(); ///< Disallow default constructor (no code is defined)
 
         /**
-         * The wireless command types (first byte of wireless packet)
+         * The wireless command types (first byte of a wireless packet)
          */
         typedef enum {
             wscmd_kill    = 0,

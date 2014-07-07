@@ -561,8 +561,13 @@ static void stream_tlm(const char *s, void *arg)
 
 CMD_HANDLER_FUNC(telemetryHandler)
 {
-    if(cmdParams.getLen() == 0) {
-        tlm_stream_all(stream_tlm, &output);
+    if(cmdParams.getLen() == 0)
+    {
+        tlm_stream_all(stream_tlm, &output, false);
+    }
+    else if (cmdParams.beginsWithIgnoreCase("ascii"))
+    {
+        tlm_stream_all(stream_tlm, &output, true);
     }
     else if(cmdParams == "save") {
         FILE *fd = fopen(DISK_TLM_NAME, "w");

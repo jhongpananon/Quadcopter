@@ -32,9 +32,9 @@ battery_monitor_task::battery_monitor_task(const uint8_t priority) :
     mHighestMilliVolts(-1 * 1000),    /* A really low voltage, it will be reset upon actual voltage sensed */
     mMilliVoltDeltaToLog(0.1 * 1000), /* Default configuration to log data if voltage changes */
     mPrevMilliVolts(0),
-    /* We need to see battery go through at least 1 volt of delta to determine its charge */
-    mMinimumDeltaMilliVoltsForValidPercent(0.5 * 1000),
-    mAdcSamples(mNumAdcSamplesBeforeVoltageUpdate)
+    /* We *possibly* need to see battery go through at least 1 volt of delta to determine its charge */
+    mMinimumDeltaMilliVoltsForValidPercent(2.5 * 1000),
+    mAdcSamples(mscNumAdcSamplesBeforeVoltageUpdate)
 {
     /* Use init() for memory allocation */
 }
@@ -56,11 +56,11 @@ bool battery_monitor_task::init(void)
         if (success) success = TLM_REG_VAR(disk, mMinimumDeltaMilliVoltsForValidPercent, tlm_uint);
     }
 
-    // Do not update task statistics (stack usage) too frequently
-    setStatUpdateRate(5 * 60 * 1000);
+    // Do not update task statistics (stack usage)
+    setStatUpdateRate(0);
 
     // Monitor the battery at a very slow rate
-    setRunDuration(mSampleFrequencyMs);
+    setRunDuration(mscSampleFrequencyMs);
 
     return success;
 }
@@ -68,7 +68,7 @@ bool battery_monitor_task::init(void)
 bool battery_monitor_task::run(void *p)
 {
     /* Read the ADC */
-    uint16_t adcValue = adc0_get_reading(EXTERNAL_VOLTAGE_ADC_CH_NUM);
+    const uint16_t adcValue = adc0_get_reading(EXTERNAL_VOLTAGE_ADC_CH_NUM);
 
     /* Store the result into our samples' array */
     mAdcSamples.storeSample(adcValue);
@@ -79,7 +79,7 @@ bool battery_monitor_task::run(void *p)
     }
 
     /* All samples are ready, so get the average value */
-    adcValue = mAdcSamples.getAverage();
+    const uint16_t avgAdcValue = mAdcSamples.getAverage();
 
     /* Clear the samples for next update */
     mAdcSamples.clear();
@@ -90,7 +90,7 @@ bool battery_monitor_task::run(void *p)
     const int32_t adcConverterBitResolution = 12;
     const float adcReferenceVoltage = 3.3f;
     const int32_t microVoltsPerAdcStep = (adcReferenceVoltage * 1000 * 1000) / (1 << adcConverterBitResolution);
-    const int32_t milliVolts = microVoltsPerAdcStep * (adcValue * EXTERNAL_VOLTAGE_DIVIDER) / 1000;
+    const int32_t milliVolts = microVoltsPerAdcStep * (avgAdcValue * EXTERNAL_VOLTAGE_DIVIDER) / 1000;
 
     /* Update the high/low voltages */
     if (milliVolts > mHighestMilliVolts) {
@@ -109,8 +109,7 @@ bool battery_monitor_task::run(void *p)
      * If we haven't "learned" about the battery pack, we assume we've got 100% charge.
      * First loop will result in high and low values being the same
      */
-    if ( ((mHighestMilliVolts - mLowestMilliVolts) > mMinimumDeltaMilliVoltsForValidPercent) ||
-         (mHighestMilliVolts == mLowestMilliVolts))
+    if ( (mHighestMilliVolts - mLowestMilliVolts) < mMinimumDeltaMilliVoltsForValidPercent)
     {
         percent = 100;
     }

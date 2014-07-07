@@ -4,20 +4,20 @@
 
 #include <string.h>
 
-#include "flight_controller.hpp"
+#include "flight_stabilizer.hpp"
 #include "file_logger.h"
 
 
 
-FlightController::FlightController() :
+FlightStabilizer::FlightStabilizer() :
     mArmed(false),
     mLogFrequencyMs(0)
 {
-    memset(&mFlightControllerAngles, 0, sizeof(mFlightControllerAngles));
-    memset(&mCurrentAngles, 0, sizeof(mCurrentAngles));
+    mFlightControllerAngles = 0;
+    mCurrentAngles = 0;
 }
 
-void FlightController::setCommonPidParameters(float minOutputValue, float maxOutputValue, uint32_t pidUpdateTimeMs)
+void FlightStabilizer::setCommonPidParameters(float minOutputValue, float maxOutputValue, uint32_t pidUpdateTimeMs)
 {
     mPitchPid.setOutputLimits(minOutputValue, maxOutputValue);
     mRollPid.setOutputLimits(minOutputValue, maxOutputValue);
@@ -28,7 +28,7 @@ void FlightController::setCommonPidParameters(float minOutputValue, float maxOut
     mYawPid.setSampleTime(pidUpdateTimeMs);
 }
 
-void FlightController::setArmed(bool armed)
+void FlightStabilizer::setArmed(bool armed)
 {
     mArmed = armed;
 
@@ -42,22 +42,22 @@ void FlightController::setArmed(bool armed)
     mYawPid.setMode(pidMode, mCurrentAngles.yaw);
 }
 
-void FlightController::enablePidIoLogging(uint32_t frequencyMs)
+void FlightStabilizer::enablePidIoLogging(uint32_t frequencyMs)
 {
     mLogFrequencyMs = frequencyMs;
 }
 
-void FlightController::runSensorInputFilters(void)
+void FlightStabilizer::runSensorInputFilters(void)
 {
 
 }
 
-void FlightController::computePitchRollYawValues(void)
+void FlightStabilizer::computePitchRollYawValues(void)
 {
 
 }
 
-void FlightController::computeThrottleValues(const uint32_t timeNowMs)
+void FlightStabilizer::computeThrottleValues(const uint32_t timeNowMs)
 {
     MotorControllerIface::motorValues_t values;
     const float throttle = (float) mFlightControllerAngles.throttle;
@@ -111,7 +111,7 @@ void FlightController::computeThrottleValues(const uint32_t timeNowMs)
     saveMotorValues(values);
 }
 
-void FlightController::applyPropellerValues(void)
+void FlightStabilizer::applyPropellerValues(void)
 {
     MotorControllerIface::motorValues_t values = { 0 };
 

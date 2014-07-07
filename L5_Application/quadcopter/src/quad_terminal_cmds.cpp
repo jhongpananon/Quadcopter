@@ -69,7 +69,7 @@ CMD_HANDLER_FUNC(quadcopterPidLogHandler)
     }
     else if (cmdParams.beginsWithIgnoreCase("pid"))
     {
-        const uint32_t minMs = 20;
+        const uint32_t minMs = 10;
         uint32_t ms = 0;
         cmdParams.scanf("%*s %u", &ms);
         if (ms > 0 && ms < minMs) {
