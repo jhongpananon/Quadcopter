@@ -132,9 +132,6 @@ bool quadcopter_task::init(void)
     f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, mEscUpdateFrequencyMs);
 
     /* TODO: Set min/max according to the particular sensor */
-    f.mAccelerationSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-            f.mGyroSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
-           f.mMagnoSensor.setMinimumMaximumForAllAxis((4 * -1024), (4 * +1024));
 
     // Do not update task statistics for this task since it may cause timing skew
     setStatUpdateRate(0);

@@ -4,119 +4,62 @@
 #ifndef SENSOR_DATA_HPP_
 #define SENSOR_DATA_HPP_
 #include <stdint.h>
+#include "sensor_ifaces.hpp"
 
 
-
-/**
- * A single axis sensor
- */
-template <typename TYPE>
-class OneAxisSensor
-{
-    public:
-        OneAxisSensor() : mRawValue(0), mOffset(0), mMinimum(0), mMaximum(0)
-        {
-
-        }
-
-        /**
-         * @returns the value of the sensor after factoring the offset
-         */
-        TYPE get(void) const
-        {
-            TYPE val = mRawValue - mOffset;
-
-            if (val < mMinimum) {
-                val = mMinimum;
-            }
-            else if (val > mMaximum) {
-                val = mMaximum;
-            }
-
-            return val;
-        }
-
-        /**
-         * Sets the raw value of the sensor
-         */
-        void set(const TYPE& value)
-        {
-            mRawValue = value;
-        }
-
-        /**
-         * @{ Set the sensor data minimum and maximum values
-         */
-        void setMinimumValue(const TYPE& value)   { mMinimum = value; }
-        void setMaximumValue(const TYPE& value)   { mMaximum = value; }
-        /** @} */
-
-        /**
-         * Sets the offset value of the sensor
-         */
-        void setOffset(const TYPE& value) { mOffset = value; }
-
-    private:
-        TYPE mRawValue;   ///< Actual (raw) value
-        TYPE mOffset;     ///< Offset value
-        TYPE mMinimum;    ///< The lowest value that can be set
-        TYPE mMaximum;    ///< The highest value that can be set
-};
 
 /**
  * The class for sensor data.
  * The idea behind this class is that any kind of sensor such as acceleration and gyro
- * can be generalized.  Whether the sensor is 10-bit or 12-bit, we can compute its
- * real-world data (ie: gravity) more easily using this class.
- *
- * XXX : Future work should involve running simple filters on the input data
- * XXX : Future work may involve an acceleration sensor class inheriting this class
- *       to add more API, such as finding the gravity pull of each axis.
+ * can be generalized and put common sensor API here (such as a smoothing filter)
  */
 class ThreeAxisSensor
 {
-    /* Public variables */
     public:
-        OneAxisSensor<int32_t> x;
-        OneAxisSensor<int32_t> y;
-        OneAxisSensor<int32_t> z;
-
-    public:
-        ThreeAxisSensor()
+        ThreeAxisSensor() : mSmoothingFilterAlpha(0)
         {
-            /* Avoid heap allocation for this simple class */
+            mLatestData = 0;
+            mPreviousData = 0;
         }
 
-        /// Get the sensor data values
-        void getAll(int32_t &xval, int32_t &yval, int32_t &zval) const
+        /// Get the filtered sensor data values
+        threeAxisVector_t getFilteredValues(void)
         {
-            xval = x.get();
-            yval = y.get();
-            zval = z.get();
+            threeAxisVector_t v = mPreviousData;
+
+            v.x = v.x + (mSmoothingFilterAlpha * (mLatestData.x - v.x));
+            v.y = v.y + (mSmoothingFilterAlpha * (mLatestData.y - v.y));
+            v.z = v.z + (mSmoothingFilterAlpha * (mLatestData.z - v.z));
+
+            return v;
         }
 
-        /// Sets the sensor data values
-        void setAll(const int32_t &xval, const int32_t &yval, const int32_t &zval)
+        /// Gets the latest sensor data values set by setRawValues()
+        threeAxisVector_t getRawValues(void)
         {
-            x.set(xval);
-            y.set(yval);
-            z.set(zval);
+            return mLatestData;
         }
 
-        /// Sets the minimum and maximum values for all axis
-        void setMinimumMaximumForAllAxis(const int32_t &min, const int32_t &max)
+        /// Sets the latest sensor data values and saves the previous values to be used for smoothing filter
+        void setRawValues(const threeAxisVector_t& values)
         {
-            x.setMinimumValue(min);
-            x.setMaximumValue(max);
+            mPreviousData = mLatestData;
+            mLatestData = values;
+        }
 
-            y.setMinimumValue(min);
-            y.setMaximumValue(max);
-
-            z.setMinimumValue(min);
-            z.setMaximumValue(max);
+        /**
+         * Sets the smoothing filter's strength
+         * @param [in] strength Between 0 and 1.  Closer to zero will generate more smoothing.
+         */
+        void setSmoothingFilterValue(float value)
+        {
+            mSmoothingFilterAlpha = value;
         }
 
     private:
+        float mSmoothingFilterAlpha;      ///< Smoothing filter gain
+        threeAxisVector_t mLatestData;    ///< Latest values of the sensor
+        threeAxisVector_t mPreviousData;  ///< Previous values of the sensor
 
 };
 

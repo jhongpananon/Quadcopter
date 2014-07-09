@@ -47,14 +47,16 @@ void FlightStabilizer::enablePidIoLogging(uint32_t frequencyMs)
     mLogFrequencyMs = frequencyMs;
 }
 
-void FlightStabilizer::runSensorInputFilters(void)
+void FlightStabilizer::computePitchRollYawValues(iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro)
 {
+    threeAxisVector_t m = magno.getAngularData();
+    threeAxisVector_t a = acc.getVectorData();
+    threeAxisVector_t g = gyro.getVectorData();
 
-}
-
-void FlightStabilizer::computePitchRollYawValues(void)
-{
-
+    /* Avoid warnings until we use these values */
+    (void) m;
+    (void) a;
+    (void) g;
 }
 
 void FlightStabilizer::computeThrottleValues(const uint32_t timeNowMs)

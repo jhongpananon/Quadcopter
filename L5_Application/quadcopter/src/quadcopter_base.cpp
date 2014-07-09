@@ -105,11 +105,8 @@ void QuadcopterBase::updateFlyLogic(void)
 
 void QuadcopterBase::processSensorData(const uint32_t timeNowMs)
 {
-    /* Run the filters on the raw input received by the flight controller */
-    runSensorInputFilters();
-
-    /* Now compute PRY from the sensor inputs */
-    computePitchRollYawValues();
+    /* TODO: Now compute PRY from the sensor inputs */
+    // computePitchRollYawValues();
 }
 
 void QuadcopterBase::updatePropellerValues(const uint32_t timeNowMs)

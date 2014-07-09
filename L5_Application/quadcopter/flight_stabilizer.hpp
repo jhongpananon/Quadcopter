@@ -7,52 +7,8 @@
 #include <stdint.h>
 
 #include "pid.hpp"
-#include "three_axis_sensor.hpp"
-#include "friend_for_tlm_reg.hpp"
-
-
-
-/**
- * The motor controller interface
- * This is an abstract class that FlightStabilizer calls to set the propeller motor throttle values.
- */
-class MotorControllerIface
-{
-    public:
-        /// The structure that contains the motor values of each axis
-        typedef struct {
-            float north;    ///< North motor
-            float south;    ///< South motor
-            float east;     ///< East motor
-            float west;     ///< West motor
-        } motorValues_t;
-
-        /// @returns the current motor values stored at this class
-        inline motorValues_t getMotorValues(void) const { return mMotorValues; }
-
-    protected:
-        /// Virtual destructor of this abstract class
-        virtual ~MotorControllerIface() { }
-
-        /**
-         * Interface method
-         * This should set the PWM percentage value of the actual motor controllers
-         * @param values    The motor values; @see motorValues_t
-         */
-        virtual void applyMotorValues(const motorValues_t& values) = 0;
-
-        /**
-         * Saves the motor values at this class, but doesn't apply them to the motors
-         * @param values    The motor values; @see motorValues_t
-         */
-        inline void saveMotorValues(const motorValues_t& values) { mMotorValues = values; }
-
-    private:
-        motorValues_t mMotorValues; ///< The motor values
-
-        // Allow private member access to register variables' telemetry
-        ALLOW_FRIEND_TO_REGISTER_TLM();
-};
+#include "sensor_ifaces.hpp"
+#include "motor_iface.hpp"
 
 
 
@@ -83,14 +39,6 @@ class FlightStabilizer : public MotorControllerIface
         } flightParams_t;
 
     public:
-        /**
-         * @{ Public sensors of the flight controller
-         */
-        ThreeAxisSensor mAccelerationSensor;    ///< Acceleration sensor data
-        ThreeAxisSensor mGyroSensor;            ///< Gyroscope sensor data
-        ThreeAxisSensor mMagnoSensor;           ///< Magnetometer sensor data
-        /** @} */
-
         /**
          * @{ API for the PID parameters
          */
@@ -126,17 +74,15 @@ class FlightStabilizer : public MotorControllerIface
     /* Next set of protected methods are meant to be called by the parent class */
     protected:
         /**
-         * Runs filters on the sensor inputs.
-         * The next step is to compute the PRY values using computePitchRollYawValues()
+         * Computes the values of PRY from the sensor inputs using the AHRS algorithm.
+         *
+         * @param [in] magno   The reference to the magnetometer sensor interface
+         * @param [in] acc     The reference to the acceleration sensor interface
+         * @param [in] gyro    The reference to the gyroscope sensor interface
+         *
+         * The next step is to run the PID and find out the throttle values using computeThrottleValues()
          */
-        void runSensorInputFilters(void);
-
-        /**
-         * Computes the values of PRY from the sensor inputs using the AHRS algorithm
-         * The next step is to run the PID and find out the throttle values using
-         * computeThrottleValues()
-         */
-        void computePitchRollYawValues(void);
+        void computePitchRollYawValues(iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro);
 
         /**
          * Computes the throttle values that should be applied on each motor
