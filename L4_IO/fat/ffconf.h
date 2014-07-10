@@ -10,7 +10,7 @@
 / Functions and Buffer Configurations
 /---------------------------------------------------------------------------*/
 
-#define	_FS_TINY		0	/* 0:Normal or 1:Tiny */
+#define	_FS_TINY		1	/* 0:Normal or 1:Tiny */
 /* When _FS_TINY is set to 1, it reduces memory consumption _MAX_SS bytes each
 /  file object. For file data transfer, FatFs uses the common sector buffer in
 /  the file system object (FATFS) instead of private sector buffer eliminated
@@ -41,7 +41,7 @@
 /* To enable f_mkfs() function, set _USE_MKFS to 1 and set _FS_READONLY to 0 */
 
 
-#define	_USE_FASTSEEK	0	/* 0:Disable or 1:Enable */
+#define	_USE_FASTSEEK	1	/* 0:Disable or 1:Enable */
 /* To enable fast seek feature, set _USE_FASTSEEK to 1. */
 
 
@@ -90,7 +90,7 @@
 
 
 #define	_USE_LFN	2		/* 0 to 3 */
-#define	_MAX_LFN	255		/* Maximum LFN length to handle (12 to 255) */
+#define	_MAX_LFN	128		/* Maximum LFN length to handle (12 to 255) */
 /* The _USE_LFN option switches the LFN feature.
 /
 /   0: Disable LFN feature. _MAX_LFN has no effect.
@@ -182,8 +182,8 @@
 /*---------------------------------------------------------------------------/
 / System Configurations
 /---------------------------------------------------------------------------*/
-
-#define	_FS_LOCK	0	/* 0:Disable or >=1:Enable */
+#include "sys_config.h"
+#define	_FS_LOCK	    MAX_FILES_OPENED	/* 0:Disable or >=1:Enable */
 /* To enable file lock control feature, set _FS_LOCK to non-zero value.
 /  The value defines how many files/sub-directories can be opened simultaneously
 /  with file lock control. This feature uses bss _FS_LOCK * 12 bytes. */
@@ -202,7 +202,7 @@
 */
 
 
-#define _WORD_ACCESS	0	/* 0 or 1 */
+#define _WORD_ACCESS	1	/* 0 or 1 */
 /* The _WORD_ACCESS option is an only platform dependent option. It defines
 /  which access method is used to the word data on the FAT volume.
 /

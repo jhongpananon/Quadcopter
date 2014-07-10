@@ -194,6 +194,10 @@ CMD_HANDLER_FUNC(logHandler)
         LOG_FLUSH();
         output.putline("Log(s) have been flushed");
     }
+    else if (cmdParams.beginsWith("raw")) {
+        cmdParams.eraseFirstWords(1);
+        logger_log_raw(cmdParams());
+    }
     else {
         LOG_INFO(cmdParams());
         output.printf("Logged: |%s|\n", cmdParams());
@@ -233,6 +237,8 @@ CMD_HANDLER_FUNC(catHandler)
     cmdParams.trimStart(" ");
     cmdParams.trimEnd(" ");
 
+    output.printf("Press a key to print one buffer at a time...\n");
+
     FIL file;
     if(FR_OK != f_open(&file, cmdParams(), FA_OPEN_EXISTING | FA_READ))
     {
@@ -241,18 +247,22 @@ CMD_HANDLER_FUNC(catHandler)
     else
     {
         // Extra char for null terminator
-        char buffer[1024 + 1] = { 0 };
-        unsigned int bytesRead = 0;
-        unsigned int totalBytesRead = 0;
+        char buffer[512] = { 0 };
+        UINT bytesRead = 0;
+        UINT totalBytesRead = 0;
 
         const unsigned int startTime = sys_get_uptime_ms();
-        while(FR_OK == f_read(&file, buffer, sizeof(buffer)-1, &bytesRead) && bytesRead > 0)
+        while(FR_OK == f_read(&file, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0)
         {
             totalBytesRead += bytesRead;
-            buffer[bytesRead] = '\0';
 
             if(printToScreen) {
-                output.put(buffer);
+                for (UINT i = 0; i < bytesRead; i++) {
+                    output.putChar(buffer[i]);
+                }
+
+                char c = 0;
+                output.getChar(&c, portMAX_DELAY);
             }
         }
         f_close(&file);

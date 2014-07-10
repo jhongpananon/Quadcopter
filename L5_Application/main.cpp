@@ -85,6 +85,8 @@
  */
 int main(void)
 {
+#define MINIMAL_TASKS
+#ifndef MINIMAL_TASKS
     /* Very important to use & for reference - I learned it the hard way :( */
     Uart2 &bluetoothUart = Uart2::getInstance();
     Uart3 &gpsUart = Uart3::getInstance();
@@ -96,6 +98,7 @@ int main(void)
      */
     bluetoothUart.init(38400, 128, 1024);
     gpsUart.init      (38400, 128, 32);
+#endif
 
     /* Log a message to initialize the logger task and log the time of startup */
     LOG_INFO_SIMPLE("System Startup");
@@ -108,11 +111,13 @@ int main(void)
 
     /* Priority 9 available, possibly for pressure sensor computations */
 
+#ifndef MINIMAL_TASKS
     /* The kill-switch task with high priority (consumes very little CPU) */
     scheduler_add_task(new kill_switch_task(priority_8));
 
     /* Consumes very little CPU, but needs high priority to handle mesh network ACKs */
     scheduler_add_task(new wirelessTask    (priority_7));
+#endif
 
     /* Priority 6 available */
 
@@ -121,6 +126,7 @@ int main(void)
 
     /* Priority 4 available */
 
+#ifndef MINIMAL_TASKS
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
      *
      * RC receiver input is queued by ISR, so it doens't need any attention up to 20ms
@@ -136,6 +142,7 @@ int main(void)
 
     /* Low priority tasks are designed to only execute if there is any CPU left */
     scheduler_add_task(new battery_monitor_task (priority_2));
+#endif
 
     /* Priority 1 is the absolute lowest priority; it is the CPU IDLE task priority */
 

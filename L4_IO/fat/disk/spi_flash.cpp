@@ -27,8 +27,15 @@ static inline uint8_t flash_spi_io(uint8_t b)           {   return ssp1_exchange
 static inline void flash_spi_multi_io(void *p, int len) {   ssp1_exchange_data(p, len);     }
 /** @} */
 
-/// Macro to select and deselect SPI device during an operation
-#define CHIP_SELECT_OP()            for(uint8_t ___i = board_io_flash_cs(); ___i; ___i = board_io_flash_ds())
+/**
+ * Macro to select and deselect SPI device during an operation.
+ * When we run in high frequency (fast CPU clock), we need to make sure there is at least
+ * 50ns difference between chip-selects, so we issue board_io_flash_ds() multiple times
+ * on purpose
+ */
+#define CHIP_SELECT_OP()            for(uint8_t ___i = board_io_flash_cs();\
+                                         ___i; \
+                                         ___i = (board_io_flash_ds() || board_io_flash_ds() || board_io_flash_ds()))
 
 /// This should match BYTE #1 of manufacturer and device ID information
 #define FLASH_MANUFACTURER_ID       (0x1F)
@@ -105,6 +112,7 @@ typedef enum {
 /// @{ Private variables
 static flash_cap_t g_flash_capacity = flash_cap_invalid;
 static uint16_t g_flash_pagesize    = 0;
+static uint32_t g_sector_count = 0;
 /// @}
 
 
@@ -260,6 +268,8 @@ DSTATUS flash_initialize()
         else {
             g_flash_pagesize = (status & std_page_size_bit) ? FLASH_PAGESIZE_512 : FLASH_PAGESIZE_528;
         }
+
+        g_sector_count = flash_get_mem_size_bytes() / FLASH_SECTOR_SIZE;
     }
 
     return (0 == g_flash_pagesize) ? FR_DISK_ERR : FR_OK;
@@ -268,6 +278,11 @@ DSTATUS flash_initialize()
 DRESULT flash_read_sectors(unsigned char *pData, int sectorNum, int sectorCount)
 {
     uint32_t addr = (sectorNum * FLASH_SECTOR_SIZE);
+
+    if ((uint32_t) (sectorNum + sectorCount - 1) > g_sector_count)
+    {
+        return RES_ERROR;
+    }
 
     /* Wait for any pending write operation to finish.  Once flash is ready, then
      * we no longer need to perform this operation to read more sectors
@@ -287,6 +302,11 @@ DRESULT flash_read_sectors(unsigned char *pData, int sectorNum, int sectorCount)
 DRESULT flash_write_sectors(unsigned char *pData, int sectorNum, int sectorCount)
 {
     uint32_t addr = (sectorNum * FLASH_SECTOR_SIZE);
+
+    if ((uint32_t) (sectorNum + sectorCount - 1) > g_sector_count)
+    {
+        return RES_ERROR;
+    }
 
     for(int i = 0; i < sectorCount; i++)
     {
