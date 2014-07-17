@@ -85,7 +85,15 @@
  */
 int main(void)
 {
-#define MINIMAL_TASKS
+    /* Undefine minimal tasks to run all tasks.
+     * #define minimal tasks to only run quadcopter and terminal tasks
+     */
+    #define MINIMAL_TASKS
+    // #undef  MINIMAL_TASKS
+
+    /* Initialize the logger and the logger task */
+    logger_init();
+
 #ifndef MINIMAL_TASKS
     /* Very important to use & for reference - I learned it the hard way :( */
     Uart2 &bluetoothUart = Uart2::getInstance();
@@ -100,14 +108,11 @@ int main(void)
     gpsUart.init      (38400, 128, 32);
 #endif
 
-    /* Log a message to initialize the logger task and log the time of startup */
-    LOG_INFO_SIMPLE("System Startup");
-
     /* Quadcopter task should be the highest priority to process the flight controller algorithms
      * Nothing should be equal or above this priority because we do not want this task to ever
      * be preempted by another task.
      */
-    scheduler_add_task(new quadcopter_task (priority_10));
+    // scheduler_add_task(new quadcopter_task (priority_10));
 
     /* Priority 9 available, possibly for pressure sensor computations */
 

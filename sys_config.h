@@ -53,7 +53,8 @@ extern "C" {
 #define TERMINAL_USE_CAN_BUS_HANDLER    0             ///< CAN bus terminal command
 
 
-#define SPI1_CLOCK_SPEED_MHZ            24          ///< Max speed of SPI1 for SD Card and Flash memory
+// XXX Need to test why logger is failing, is it because of 24Mhz SPI?  Just slowing this down to 16 for now
+#define SPI1_CLOCK_SPEED_MHZ            16          ///< Max speed of SPI1 for SD Card and Flash memory
 #define SPI0_CLOCK_SPEED_MHZ            8           ///< Nordic wireless requires 1-8Mhz max
 #define I2C2_CLOCK_SPEED_KHZ            100         ///< 100Khz is standard I2C speed
 
@@ -99,7 +100,7 @@ unsigned int sys_get_cpu_clock();
 #define EXTERNAL_CLOCK      (12 * 1000 * 1000UL)    ///< Change according to your board specification
 #define RTC_CLOCK           (32768UL)               ///< Do not change, this is the typical RTC crystal value
 
-#define DESIRED_CPU_CLOCK	(48 * 1000 * 1000UL)    ///< Define the CPU speed you desire, must be between 1-100Mhz
+#define DESIRED_CPU_CLOCK	(96 * 1000 * 1000UL)    ///< Define the CPU speed you desire, must be between 1-100Mhz
 #define FALLBACK_CPU_CLOCK  (24 * 1000 * 1000UL)    ///< Do not change.  This is the fall-back CPU speed if DESIRED_CPU_CLOCK cannot be attained
 
 #define TIMER0_US_PER_TICK  (10)                    ///< Microseconds per tick for Timer0 that is used by FreeRTOS run-time stats
