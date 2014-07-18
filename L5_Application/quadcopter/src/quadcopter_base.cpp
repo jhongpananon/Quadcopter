@@ -67,14 +67,14 @@ void QuadcopterBase::updateFlyLogic(void)
         if (imode_kill_switch_engaged != mInternalMode) {
             mInternalMode = imode_kill_switch_engaged;
 
-            LOG_INFO_SIMPLE("Kill switch activated");
+            LOG_SIMPLE_MSG("Kill switch activated");
         }
     }
     else if (mBatteryPercentage < mLowBatteryTriggerPercentage) {
         if (imode_low_battery != mInternalMode) {
             mInternalMode = imode_low_battery;
 
-            LOG_INFO_SIMPLE("Low battery has been detected - %u/%u %%",
+            LOG_SIMPLE_MSG("Low battery has been detected - %u/%u %%",
                             mBatteryPercentage, mLowBatteryTriggerPercentage);
         }
     }

@@ -83,7 +83,7 @@ void FlightStabilizer::computeThrottleValues(const uint32_t timeNowMs)
          */
         lastTimeMs = timeNowMs - (timeNowMs % mLogFrequencyMs);
 
-        LOG_INFO_SIMPLE("%i,%i,%.1f,%i,%i,%.1f,%i,%i,%.1f",
+        LOG_SIMPLE_MSG("%i,%i,%.1f,%i,%i,%.1f,%i,%i,%.1f",
                 (int)mFlightControllerAngles.angle.pitch, (int)mCurrentAngles.pitch, pitchThrottle,
                 (int)mFlightControllerAngles.angle.roll, (int)mCurrentAngles.roll, rollThrottle,
                 (int)mFlightControllerAngles.angle.yaw, (int)mCurrentAngles.yaw, yawThrottle);

@@ -245,7 +245,7 @@ bool terminalTask::saveDiskTlm(void)
             fclose(file);
 
             puts("Changes saved to disk...");
-            LOG_INFO_SIMPLE("Disk variables saved to disk");
+            LOG_SIMPLE_MSG("Disk variables saved to disk");
         }
     }
     #endif

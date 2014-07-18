@@ -88,11 +88,14 @@ int main(void)
     /* Undefine minimal tasks to run all tasks.
      * #define minimal tasks to only run quadcopter and terminal tasks
      */
-    #define MINIMAL_TASKS
+    // #define MINIMAL_TASKS
     // #undef  MINIMAL_TASKS
 
     /* Initialize the logger and the logger task */
-    logger_init();
+    logger_init(priority_2);
+
+    /* Log the time of Quadcopter startup */
+    LOG_SIMPLE_MSG("Quadcopter Startup");
 
 #ifndef MINIMAL_TASKS
     /* Very important to use & for reference - I learned it the hard way :( */
@@ -112,7 +115,7 @@ int main(void)
      * Nothing should be equal or above this priority because we do not want this task to ever
      * be preempted by another task.
      */
-    // scheduler_add_task(new quadcopter_task (priority_10));
+    scheduler_add_task(new quadcopter_task (priority_10));
 
     /* Priority 9 available, possibly for pressure sensor computations */
 

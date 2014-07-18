@@ -32,17 +32,19 @@
 #include "ff.h"
 
 
-
+#if (FILE_LOGGER_KEEP_FILE_OPEN)
 static FIL *gp_file_ptr = NULL;                     ///< The pointer to the file object
-static int g_blocked_calls = 0;                     ///< Number of logging calls that blocked
+#endif
+
+static uint16_t g_blocked_calls = 0;                ///< Number of logging calls that blocked
+static uint16_t g_buffer_watermark = 0;             ///< The watermark of the number of buffers consumed
 static int g_highest_file_write_time = 0;           ///< Highest time spend while trying to write file buffer
-static int g_buffer_watermark = 0;                  ///< The watermark of the number of buffers consumed
 static char * gp_file_buffer = NULL;                ///< Pointer to local buffer space before it is written to file
 static QueueHandle_t g_write_buffer_queue = NULL;   ///< Log message pointers are written to this queue
 static QueueHandle_t g_empty_buffer_queue = NULL;   ///< Log message pointers are available from this queue
-char * gp_buffer_ptrs[FILE_LOGGER_MSG_BUFFERS] = { 0 };
+char * gp_buffer_ptrs[FILE_LOGGER_MSG_BUFFERS] = { 0 }; ///< Pointers to user log message buffers
 
-/// XXX Remove this
+/// XXX Remove this after testing.
 #undef FILE_LOGGER_FILENAME
 #define FILE_LOGGER_FILENAME "1:log.csv"
 
@@ -86,7 +88,7 @@ char * gp_buffer_ptrs[FILE_LOGGER_MSG_BUFFERS] = { 0 };
  * immediately writes the data to file without buffering. "#if 0" changed to "if 1"
  * THIS FAILS!  WHY???
  *
- * Test 7: Increase logger size to 3K
+ * Test 7: Increase logger stack size to 3K
  * This fails too!
  *
  * Test 8: Just logger task and terminal task logging 10K messages --> ALSO FAILS!
@@ -98,18 +100,13 @@ char * gp_buffer_ptrs[FILE_LOGGER_MSG_BUFFERS] = { 0 };
  *
  * Test 9: Change num logging buffers to 1, and test that logger always dequeues correct pointer
  * Still fails, but we seem to be dequeueing correct pointer.
+ *
+ * Test 10: Tested this exact thing in Windows and it works well!!!  All of the logic!
+ * So I think the problem is the high_level_init.cpp's periodic ISR resetting base priority
+ * register of FreeRTOS?  We can definitely claim that the problem is FreeRTOS related because
+ * logging at main() works just fine.
  */
 
-#if 0
-    for (int i = 0; i < 10000; i++) {
-        if (0 == (i%100)) {
-            printf("%i\n", i);
-        }
-        char buffer[128];
-        sprintf(buffer, "%u: 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ\n", (unsigned int) sys_get_uptime_ms());
-        Storage::append("1:test.txt", buffer, strlen(buffer), 0);
-    }
-#endif
 
 
 static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_write)
@@ -118,7 +115,11 @@ static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_wr
     FRESULT err = 0;
     UINT bytes_written = 0;
     const UINT bytes_to_write_uint = bytes_to_write;
-    const int start_time = sys_get_uptime_ms();
+    const uint32_t start_time = sys_get_uptime_ms();
+
+    #if (!FILE_LOGGER_KEEP_FILE_OPEN)
+    FIL fatfs_file = { 0 };
+    #endif
 
     if (0 == bytes_to_write_uint) {
         success = true;
@@ -131,13 +132,13 @@ static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_wr
     }
     #else
     /* File not opened, open it, seek it, and then write it */
-    else if(FR_OK == (err = f_open(gp_file_ptr, FILE_LOGGER_FILENAME, FA_OPEN_ALWAYS | FA_WRITE)))
+    else if(FR_OK == (err = f_open(&fatfs_file, FILE_LOGGER_FILENAME, FA_OPEN_ALWAYS | FA_WRITE)))
     {
-        if (FR_OK == (err = f_lseek(gp_file_ptr, f_size(gp_file_ptr))))
+        if (FR_OK == (err = f_lseek(&fatfs_file, f_size(&fatfs_file))))
         {
-            err = f_write(gp_file_ptr, buffer, bytes_to_write_uint, &bytes_written);
+            err = f_write(&fatfs_file, buffer, bytes_to_write_uint, &bytes_written);
         }
-        f_close(gp_file_ptr);
+        f_close(&fatfs_file);
     }
     #endif
     else {
@@ -145,8 +146,7 @@ static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_wr
     }
 
     /* Capture the time */
-    const int end_time = sys_get_uptime_ms();
-    const int diff_time = end_time - start_time;
+    const uint32_t diff_time = sys_get_uptime_ms() - start_time;
     if (diff_time > g_highest_file_write_time) {
         g_highest_file_write_time = diff_time;
     }
@@ -157,7 +157,7 @@ static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_wr
     if (!success) {
         printf("Error %u writing logfile. %u/%u written. Fptr: %u\n",
                 (unsigned)err, (unsigned)bytes_written, (unsigned)bytes_to_write,
-                (unsigned) (gp_file_ptr->fsize));
+                (unsigned) fatfs_file.fptr);
     }
 
     return success;
@@ -178,57 +178,48 @@ static void logger_task(void *p)
      */
     char * const start_ptr = gp_file_buffer;
     char * const end_ptr = start_ptr + FILE_LOGGER_BUFFER_SIZE;
-    const uint32_t buffer_size = (end_ptr - start_ptr);
+    const size_t buffer_size = (end_ptr - start_ptr);
 
     char * log_msg = NULL;
     char * write_ptr = start_ptr;
-    uint32_t len = 0;
-    uint32_t buffer_overflow_cnt = 0;
+    size_t len = 0;
+    size_t buffer_overflow_cnt = 0;
 
     while (1)
     {
-        /* Receive the log message we wish to write to our buffer */
-        log_msg = NULL;
-        xQueueReceive(g_write_buffer_queue, &log_msg, OS_MS(1000 * FILE_LOGGER_FLUSH_TIMEOUT));
-
-        if ((len = uxQueueMessagesWaiting(g_write_buffer_queue)) > g_buffer_watermark) {
-            g_buffer_watermark = len;
-        }
-
-        /* If we receive NULL pointer, we assume it is to flush the data.
-         * log_msg will also be NULL after the FILE_LOGGER_FLUSH_TIMEOUT which
-         * is another way the logger will flush the data to the file.
+        /* Receive the log message we wish to write to our buffer.
+         * Timeout or NULL pointer received is the signal to flush the data.
          */
-        if (NULL == log_msg) {
-            /* We don't see the NULL pointer to the queue */
+        log_msg = NULL;
+        if (!xQueueReceive(g_write_buffer_queue, &log_msg, OS_MS(1000 * FILE_LOGGER_FLUSH_TIMEOUT)) ||
+            NULL == log_msg)
+        {
             logger_write_to_file(start_ptr, (write_ptr - start_ptr));
             write_ptr = start_ptr;
             continue;
         }
 
-        /* This is test code to immediately write data to the file.  It is highly in-efficient and is
-         * included here just for reference or test purposes.
-         */
-        #if 1
-        else {
-            if (gp_buffer_ptrs[0] != log_msg) {
-                printf("Wanted %p, got %p\n", gp_buffer_ptrs[0], log_msg);
-            }
-            len = strlen(log_msg);
-
-            log_msg[len] = '\n';
-            log_msg[++len] = '\0';
-            logger_write_to_file(log_msg, len);
-
-            xQueueSend(g_empty_buffer_queue, &log_msg, portMAX_DELAY);
-            continue;
+        /* Update the watermark of the number of messages we see in the queue */
+        if ((len = uxQueueMessagesWaiting(g_write_buffer_queue)) > g_buffer_watermark) {
+            g_buffer_watermark = 1 + len; /* One message was just dequeued */
         }
-        #endif
 
         /* Get the length and append the newline character */
         len = strlen(log_msg);
         log_msg[len] = '\n';
         log_msg[++len] = '\0';
+
+        /* This is test code to immediately write data to the file.  It is highly in-efficient and is
+         * included here just for reference or test purposes.
+         * XXX : revert to #if 0 after testing
+         */
+        #if 1
+        {
+            logger_write_to_file(log_msg, len);
+            xQueueSend(g_empty_buffer_queue, &log_msg, portMAX_DELAY);
+            continue;
+        }
+        #endif
 
         /* If we will overflow our buffer we need to write the full buffer and do partial copy */
         if (len + write_ptr >= end_ptr)
@@ -261,70 +252,72 @@ static void logger_task(void *p)
     }
 }
 
-static bool logger_internal_init(void)
+static bool logger_internal_init(int logger_priority)
 {
     uint32_t i = 0;
     char * ptr = NULL;
-    const bool failure = false;
     const bool success = true;
 
     /* Create the buffer space we write the logged messages to (before we flush it to the file) */
     gp_file_buffer = (char*) malloc(FILE_LOGGER_BUFFER_SIZE);
     if (NULL == gp_file_buffer) {
-        return failure;
-    }
-    else {
-        memset(gp_file_buffer, 0, FILE_LOGGER_BUFFER_SIZE);
+        goto failure;
     }
 
     /* Create the queues that keep track of the written buffers, and available buffers */
     g_write_buffer_queue = xQueueCreate(FILE_LOGGER_MSG_BUFFERS, sizeof(char*));
     g_empty_buffer_queue = xQueueCreate(FILE_LOGGER_MSG_BUFFERS, sizeof(char*));
     if (NULL == g_write_buffer_queue || NULL == g_empty_buffer_queue) {
-        return failure;
+        goto failure;
     }
 
     /* Create the actual buffers for log messages */
     for (i = 0; i < FILE_LOGGER_MSG_BUFFERS; i++)
     {
         ptr = (char*) malloc(FILE_LOGGER_MSG_MAX_LEN);
-        memset(ptr, 0, FILE_LOGGER_MSG_MAX_LEN);
         gp_buffer_ptrs[i] = ptr;
 
-        if (NULL != ptr) {
-            xQueueSendFromISR(g_empty_buffer_queue, &ptr, NULL);
+        if (NULL == ptr) {
+            goto failure;
         }
-        else {
-            return failure;
-        }
-    }
 
-    // xxx Change after testing successfully: gp_file_ptr = malloc (sizeof(*gp_file_ptr));
-    gp_file_ptr = malloc (sizeof(FIL));
-    if (NULL == gp_file_ptr)
-    {
-        return failure;
+        /* XXX Could this be the problem? */
+        xQueueSendFromISR(g_empty_buffer_queue, &ptr, NULL);
     }
 
 #if (FILE_LOGGER_KEEP_FILE_OPEN)
+    gp_file_ptr = malloc (sizeof(*gp_file_ptr));
     if(FR_OK != f_open(gp_file_ptr, FILE_LOGGER_FILENAME, FA_OPEN_ALWAYS | FA_WRITE))
     {
         return failure;
     }
 #endif
 
-    if (!xTaskCreate(logger_task, "logger", FILE_LOGGER_STACK_SIZE, NULL, FILE_LOGGER_OS_PRIORITY, NULL))
+    if (!xTaskCreate(logger_task, "logger", FILE_LOGGER_STACK_SIZE, NULL, logger_priority, NULL))
     {
-        return failure;
+        goto failure;
     }
 
     return success;
+
+    /* failure case to delete allocated memory */
+    failure:
+        if (gp_file_buffer) free(gp_file_buffer);
+        /* Delete g_write_buffer_queue */
+        /* Delete g_empty_buffer_queue */
+        for (i = 0; i < FILE_LOGGER_MSG_BUFFERS; i++) {
+            if (gp_buffer_ptrs[i]) free(gp_buffer_ptrs[i]);
+        }
+        return (!success);
 }
 
 void logger_send_flush_request(void)
 {
-    char * null_ptr_to_flush = NULL;
-    xQueueSend(g_write_buffer_queue, &null_ptr_to_flush, portMAX_DELAY);
+    if (taskSCHEDULER_RUNNING == xTaskGetSchedulerState())
+    {
+        char * null_ptr_to_flush = NULL;
+        xQueueSend(g_write_buffer_queue, &null_ptr_to_flush, portMAX_DELAY);
+    }
 }
 
 int logger_get_blocked_call_count(void)
@@ -342,13 +335,13 @@ int logger_get_num_buffers_watermark(void)
     return g_buffer_watermark;
 }
 
-void logger_init(void)
+void logger_init(int logger_priority)
 {
     /* Prevent double init */
     if (NULL == gp_file_buffer)
     {
-        if (!logger_internal_init()) {
-            printf("logger initialization failure\n");
+        if (!logger_internal_init(logger_priority)) {
+            printf("ERROR: logger initialization failure\n");
         }
     }
 }
@@ -453,7 +446,6 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
         va_end(args);
     } while (0);
 
-    /* Send the buffer to the queue for the logger task to write */
     logger_write_log_message(buffer, os_running);
 }
 
@@ -473,6 +465,5 @@ void logger_log_raw(const char * msg, ...)
         va_end(args);
     } while (0);
 
-    /* Send the buffer to the queue for the logger task to write */
     logger_write_log_message(buffer, os_running);
 }

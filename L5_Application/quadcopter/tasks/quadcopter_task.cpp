@@ -176,9 +176,6 @@ bool quadcopter_task::taskEntry(void)
     /* "Disk" data is restored at this point, so we set it to the Quadcopter class */
     mQuadcopter.setLowBatteryTriggerPercentage(mLowBatteryTriggerPercent);
 
-    /* Log the time of Quadcopter startup */
-    LOG_INFO_SIMPLE("Quadcopter Startup");
-
     while (0 != (xTaskGetTickCount() % mSensorPollFrequencyMs) )
     {
         /* Wait until we get aligned timer just so that the logging will happen
