@@ -54,7 +54,7 @@ extern "C" {
 
 
 // XXX Need to test why logger is failing, is it because of 24Mhz SPI?  Just slowing this down to 16 for now
-#define SPI1_CLOCK_SPEED_MHZ            16          ///< Max speed of SPI1 for SD Card and Flash memory
+#define SPI1_CLOCK_SPEED_MHZ            24          ///< Max speed of SPI1 for SD Card and Flash memory
 #define SPI0_CLOCK_SPEED_MHZ            8           ///< Nordic wireless requires 1-8Mhz max
 #define I2C2_CLOCK_SPEED_KHZ            100         ///< 100Khz is standard I2C speed
 

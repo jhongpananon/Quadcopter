@@ -21,7 +21,7 @@
  * @brief This is a logger that logs data to a file on the system such as an SD Card.
  * @ingroup Utilities
  *
- * 20140714: Fixed bugs and add more API
+ * 20140714: Fixed bugs and added more API
  * 20140529: Changed completely to C and FreeRTOS based logger
  * 20120923: modified flush() to use semaphores
  * 20120619: Initial
@@ -41,20 +41,24 @@ extern "C" {
  *
  * The message buffers are the maximum number of LOGGING calls (macros) that can occur at once after which
  * the caller to LOG macro will be blocked.  Note that even a small number like 5 is good enough because
- * as soon as there is time  for the logging task to run, it will transfer the LOGGED message into the
+ * as soon as there is time for the logging task to run, it will transfer the LOGGED message into the
  * file buffer immediately.  So this number is kind of like a double buffer.  On the other hand, please
  * note that while the file is being written, the number of buffers need to be enough because the logger
  * task will be busy writing the buffer to the file.
+ *
+ * For example, if we anticipate logging every 10ms, and 1K of data takes 100ms to write, then we should
+ * configure the number of logging buffers greater than 10 because while the logger task is busy writing
+ * 1K of data for 100ms, we need to be able to write for 100ms, which will take at least 10 buffers.
  *
  * The flush timeout is the timeout after which point we are forced to flush the data buffer to the file.
  * So in an event when no logging calls occur and there is data in the buffer, we will write it to the
  * file after this time.
  */
 #define FILE_LOGGER_BUFFER_SIZE      (1 * 1024)     ///< Recommend multiples of 512
-#define FILE_LOGGER_MSG_BUFFERS      10             ///< Number of buffers (need to have enough while file is being written)
-#define FILE_LOGGER_MSG_MAX_LEN      150            ///< Max length of a log message
-#define FILE_LOGGER_FILENAME         "0:log.csv"    ///< Destination filename
-#define FILE_LOGGER_STACK_SIZE       (4 * 512 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
+#define FILE_LOGGER_NUM_BUFFERS      20             ///< Number of buffers (need to have enough while file is being written)
+#define FILE_LOGGER_LOG_MSG_MAX_LEN  150            ///< Max length of a log message
+#define FILE_LOGGER_FILENAME         "1:log.csv"    ///< Destination filename (0: for SPI flash, 1: for SD card)
+#define FILE_LOGGER_STACK_SIZE       (3 * 512 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
 #define FILE_LOGGER_FLUSH_TIMEOUT    (1 * 60)       ///< Logs are flushed after this time
 #define FILE_LOGGER_BLOCK_TIME_MS    (10)           ///< If no buffer available within this time, block time counter will increment
 #define FILE_LOGGER_KEEP_FILE_OPEN   (0)            ///< If non-zero, the file will be kept open
@@ -63,16 +67,16 @@ extern "C" {
 
 
 /**
- * Initializes the logger.
- * This must be done before further logging calls are used.
+ * Initializes the logger; this must be done before further logging calls are used.
  * @param [in] logger_priority The priority at which logger should buffer user data and then write to file.
  */
 void logger_init(int logger_priority);
 
 /**
- * @{ Macros to log a message using printf style API
- * @note If FreeRTOS is not running, the message is immediately output to file, so
- *       you should use FreeRTOS which will enable buffered and optimized operation.
+ * @{ Macros to log a message using printf() style API
+ * @note If FreeRTOS is not running, the message is immediately output to file.  If FreeRTOS is running,
+ *       the data will be written to buffer using the logger task and eventually flushed out to the file
+ *       either after the timeout or when the buffer is full.
  *
  * @code
  *      LOG_INFO("Error %i encountered", error_number);
@@ -89,25 +93,27 @@ void logger_init(int logger_priority);
  * This can save space to log simple messages when you don't want to know the function
  * name, line number and filename of where the logger function was called from.
  *
- * @note If FreeRTOS is not running, the message is immediately output to file, so
- *       you should use FreeRTOS which will enable buffered and optimized operation.
+ * @note If FreeRTOS is not running, the message is immediately output to file.  If FreeRTOS is running,
+ *       the data will be written to buffer using the logger task and eventually flushed out to the file
+ *       either after the timeout or when the buffer is full.
  */
-#define LOG_SIMPLE_MSG(msg, p...)      logger_log (log_info, NULL, NULL, 0, msg, ## p)
+#define LOG_SIMPLE_MSG(msg, p...)       logger_log (log_info, NULL, NULL, 0, msg, ## p)
 
 /**
- * Logs a raw message without any header.
+ * Logs a raw message without any header such as the timestamp.
  *
- * @note If FreeRTOS is not running, the message is immediately output to file, so
- *       you should use FreeRTOS which will enable buffered and optimized operation.
+ * @note If FreeRTOS is not running, the message is immediately output to file.  If FreeRTOS is running,
+ *       the data will be written to buffer using the logger task and eventually flushed out to the file
+ *       either after the timeout or when the buffer is full.
  */
 #define LOG_RAW_MSG(msg, p...)          logger_log_raw(msg, ## p)
 
 /**
  * Macro to flush the logs.
- * You can flush it using logger_flush() but the MACRO is provided just to be
- * consistent with the other logger macros where a function is not used.
+ * You can flush it using logger_send_flush_request() but the MACRO is provided
+ * just to be consistent with the other logger macros where a function is not used.
  *
- * @note Flushing is not needed when the OS is running
+ * @note Flushing is not needed when the OS is running.
  */
 #define LOG_FLUSH()                     logger_send_flush_request()
 
@@ -132,15 +138,15 @@ void logger_send_flush_request(void);
 int logger_get_blocked_call_count(void);
 
 /**
- * @returns the highest time that was spend writing the logger buffer to file
- * This can be useful to assess how many FILE_LOGGER_MSG_BUFFERS we need because we only
+ * @returns the highest time that was spend writing the logger buffer to file.
+ * This can be useful to assess how many FILE_LOGGER_NUM_BUFFERS we need because we only
  * need enough buffers available while the file buffer is being written.
  */
 int logger_get_highest_file_write_time_ms(void);
 
 /**
  * @returns the highest watermark of the number of buffers available to the logger
- * This can be useful to assess how many FILE_LOGGER_MSG_BUFFERS we need in the worst case.
+ * This can be useful to assess how many FILE_LOGGER_NUM_BUFFERS we need in the worst case.
  */
 int logger_get_num_buffers_watermark(void);
 
@@ -171,6 +177,7 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
 
 /**
  * @see LOG_RAW_MSG()
+ * You should not use this directly, the macros pass the arguments to this function.
  */
 void logger_log_raw(const char * msg, ...);
 

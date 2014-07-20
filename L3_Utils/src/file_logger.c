@@ -16,10 +16,11 @@
  *          p r e e t . w i k i @ g m a i l . c o m
  */
 
-#include <stdlib.h>
+#include <stdlib.h>   // malloc()
 #include <stdio.h>    // sprintf()
 #include <string.h>   // strlen()
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "FreeRTOS.h"
@@ -32,6 +33,7 @@
 #include "ff.h"
 
 
+
 #if (FILE_LOGGER_KEEP_FILE_OPEN)
 static FIL *gp_file_ptr = NULL;                     ///< The pointer to the file object
 #endif
@@ -42,73 +44,14 @@ static int g_highest_file_write_time = 0;           ///< Highest time spend whil
 static char * gp_file_buffer = NULL;                ///< Pointer to local buffer space before it is written to file
 static QueueHandle_t g_write_buffer_queue = NULL;   ///< Log message pointers are written to this queue
 static QueueHandle_t g_empty_buffer_queue = NULL;   ///< Log message pointers are available from this queue
-char * gp_buffer_ptrs[FILE_LOGGER_MSG_BUFFERS] = { 0 }; ///< Pointers to user log message buffers
 
-/// XXX Remove this after testing.
-#undef FILE_LOGGER_FILENAME
-#define FILE_LOGGER_FILENAME "1:log.csv"
+
 
 /**
- * Test 1: With 20ms quadcopter task logging data:
- * With vsnprintf() commented out and buffering:
- *  - Seems to work
- *  - Some parts of file still has bad data
- *
- * Test 2: with 20ms quadcopter task logging data
- * With vsnprintf() commmented out and no buffering:
- *  - Still fails
- *
- * Test 3: No FreeRTOS usage
- * With 10000 logging calls in main() without starting FreeRTOS, it works!
- * This is when we directly call Storage::append() API
- *
- * Test 4: With just terminal task and logging task:
- * I have a suspicion that the quadcopter task might be the culprit.
- * nops... using terminal command "qlog test 10000 hello" fails.
- *
- * Test 5:
- * Only logger task and special task just to log data 10,000 times.
- * It worked, but file had some corrupted areas... so could this be a
- * problem with our logger since terminal task was copying data just
- * fine when it was doing file I/O using "cp" command. That means that
- *
- * File I/O is fully working...
- * This leads me to believe that the problem is here in the logger!
- *
- * Test 6: Force os_running to false and log at a high frequency!
- * This forces the log message to be fully formed, but it writes the message
- * immediately to the file bypassing the logger task.  This basically verifies
- * that the logic of logger_log() is fully working without dealing with FreeRTOS
- * queues.  Spending about 5 minutes to do the logging....
- * File turned out 840K and it fully worked!!!
- *
- * The problem is definitely logging task.
- *
- * Test 6: Run minimal logic at logging task that only dequeues pointer and
- * immediately writes the data to file without buffering. "#if 0" changed to "if 1"
- * THIS FAILS!  WHY???
- *
- * Test 7: Increase logger stack size to 3K
- * This fails too!
- *
- * Test 8: Just logger task and terminal task logging 10K messages --> ALSO FAILS!
- *
- * So what do we know?
- * logger_write_to_file() is okay
- * logger_log() is okay
- *  Something is wrong with the logging task!!!
- *
- * Test 9: Change num logging buffers to 1, and test that logger always dequeues correct pointer
- * Still fails, but we seem to be dequeueing correct pointer.
- *
- * Test 10: Tested this exact thing in Windows and it works well!!!  All of the logic!
- * So I think the problem is the high_level_init.cpp's periodic ISR resetting base priority
- * register of FreeRTOS?  We can definitely claim that the problem is FreeRTOS related because
- * logging at main() works just fine.
+ * Writes the buffer to the file.
+ * @param [in] buffer   The data pointer to write from
+ * @param [in] bytes_to_write  The number of bytes to write
  */
-
-
-
 static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_write)
 {
     bool success = false;
@@ -154,17 +97,64 @@ static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_wr
     /* To be successful, bytes written should be the same count as the bytes intended to be written */
     success = (bytes_to_write_uint == bytes_written);
 
+    /* We don't want to silently fail, so print a message in case an error occurs */
     if (!success) {
         printf("Error %u writing logfile. %u/%u written. Fptr: %u\n",
-                (unsigned)err, (unsigned)bytes_written, (unsigned)bytes_to_write,
-                (unsigned) fatfs_file.fptr);
+                (unsigned)err, (unsigned)bytes_written, (unsigned)bytes_to_write, (unsigned) fatfs_file.fptr);
     }
 
     return success;
 }
 
 /**
- * This is the actual logger FreeRTOS task responsible for:
+ * @returns a logger buffer pointer
+ * @param [in] os_running If FreeRTOS is running, this will grab from the queue while potentially blocking
+ *             otherwise it will return a buffer pointer without blocking since buffer will always be
+ *             available if OS is not running since no multi-threaded operation is going on.
+ */
+static char * logger_get_buffer_ptr(const bool os_running)
+{
+    char * buffer = NULL;
+
+    /* Get an available buffer to write the data to, and if OS is not running, just use our first buffer */
+    if (!os_running) {
+        xQueueReceive(g_empty_buffer_queue, &buffer, 0);
+    }
+    else if (!xQueueReceive(g_empty_buffer_queue, &buffer, OS_MS(FILE_LOGGER_BLOCK_TIME_MS))) {
+        ++g_blocked_calls;
+
+        /* This time, just block forever until we get a buffer */
+        xQueueReceive(g_empty_buffer_queue, &buffer, portMAX_DELAY);
+    }
+
+    return buffer;
+}
+
+/**
+ * Writes the buffer pointer to either file buffer, or directly to file if OS is not running
+ * @param [in] buffer The buffer pointer to write
+ * @param [in] os_running If OS is running, it will just queue the pointer, and not write directly to the file.
+ */
+static void logger_write_log_message(char * buffer, const bool os_running)
+{
+    /* Send the buffer to the queue for the logger task to write */
+    if (os_running) {
+        xQueueSend(g_write_buffer_queue, &buffer, portMAX_DELAY);
+    }
+    /* No logging task to write the data, so we need to do it ourselves */
+    else {
+        size_t len = strlen(buffer);
+        buffer[len] = '\n';
+        buffer[++len] = '\0';
+        logger_write_to_file(buffer, len);
+
+        /* OS not running, so put the buffer back to the empty queue instead of write queue */
+        xQueueSend(g_empty_buffer_queue, &buffer, 0);
+    }
+}
+
+/**
+ * This is the actual FreeRTOS logger task responsible for:
  *      - Retrieve a log message written to the write queue
  *      - Copy it to our local buffer
  *      - If local buffer is full, write it to the file
@@ -178,7 +168,6 @@ static void logger_task(void *p)
      */
     char * const start_ptr = gp_file_buffer;
     char * const end_ptr = start_ptr + FILE_LOGGER_BUFFER_SIZE;
-    const size_t buffer_size = (end_ptr - start_ptr);
 
     char * log_msg = NULL;
     char * write_ptr = start_ptr;
@@ -199,9 +188,11 @@ static void logger_task(void *p)
             continue;
         }
 
-        /* Update the watermark of the number of messages we see in the queue */
-        if ((len = uxQueueMessagesWaiting(g_write_buffer_queue)) > g_buffer_watermark) {
-            g_buffer_watermark = 1 + len; /* One message was just dequeued */
+        /* Update the watermark of the number of messages we see in the queue and note that we
+         * add one to account for the message we just dequeued.
+         */
+        if ((len = (1 + uxQueueMessagesWaiting(g_write_buffer_queue)) ) > g_buffer_watermark) {
+            g_buffer_watermark = len;
         }
 
         /* Get the length and append the newline character */
@@ -211,9 +202,8 @@ static void logger_task(void *p)
 
         /* This is test code to immediately write data to the file.  It is highly in-efficient and is
          * included here just for reference or test purposes.
-         * XXX : revert to #if 0 after testing
          */
-        #if 1
+        #if 0
         {
             logger_write_to_file(log_msg, len);
             xQueueSend(g_empty_buffer_queue, &log_msg, portMAX_DELAY);
@@ -224,18 +214,19 @@ static void logger_task(void *p)
         /* If we will overflow our buffer we need to write the full buffer and do partial copy */
         if (len + write_ptr >= end_ptr)
         {
+            /* This could be zero when we write the last byte in the buffer */
             buffer_overflow_cnt = (len + write_ptr - end_ptr);
 
-            /* Copy partial message */
+            /* Copy the partial message up until the end of the buffer */
             memcpy(write_ptr, log_msg, (end_ptr - write_ptr));
 
-            /* Copy the entire buffer to the file */
-            logger_write_to_file(start_ptr, buffer_size);
+            /* Write the entire buffer to the file */
+            logger_write_to_file(start_ptr, (end_ptr - start_ptr));
 
             /* Optional: Zero out the buffer space */
             // memset(start_ptr, '\0', buffer_size);
 
-            /* Copy the left-over message to the start of "fresh" buffer space (after writing to file) */
+            /* Copy the left-over message to the start of "fresh" buffer space (after writing to the file) */
             if (buffer_overflow_cnt > 0) {
                 memcpy(start_ptr, (log_msg + len - buffer_overflow_cnt), buffer_overflow_cnt);
             }
@@ -247,11 +238,16 @@ static void logger_task(void *p)
             write_ptr += len;
         }
 
-        /* Put the data pointer back to available buffer */
+        /* Put the data pointer back to the available buffers */
         xQueueSend(g_empty_buffer_queue, &log_msg, portMAX_DELAY);
     }
 }
 
+/**
+ * Allocates the memory used for the logger.
+ * @param [in] logger_priority  The priority at which the logger task will run.
+ * @returns true if memory allocation succeeded.
+ */
 static bool logger_internal_init(int logger_priority)
 {
     uint32_t i = 0;
@@ -265,24 +261,26 @@ static bool logger_internal_init(int logger_priority)
     }
 
     /* Create the queues that keep track of the written buffers, and available buffers */
-    g_write_buffer_queue = xQueueCreate(FILE_LOGGER_MSG_BUFFERS, sizeof(char*));
-    g_empty_buffer_queue = xQueueCreate(FILE_LOGGER_MSG_BUFFERS, sizeof(char*));
+    g_write_buffer_queue = xQueueCreate(FILE_LOGGER_NUM_BUFFERS, sizeof(char*));
+    g_empty_buffer_queue = xQueueCreate(FILE_LOGGER_NUM_BUFFERS, sizeof(char*));
     if (NULL == g_write_buffer_queue || NULL == g_empty_buffer_queue) {
         goto failure;
     }
 
     /* Create the actual buffers for log messages */
-    for (i = 0; i < FILE_LOGGER_MSG_BUFFERS; i++)
+    for (i = 0; i < FILE_LOGGER_NUM_BUFFERS; i++)
     {
-        ptr = (char*) malloc(FILE_LOGGER_MSG_MAX_LEN);
-        gp_buffer_ptrs[i] = ptr;
+        ptr = (char*) malloc(FILE_LOGGER_LOG_MSG_MAX_LEN);
 
         if (NULL == ptr) {
             goto failure;
         }
 
-        /* XXX Could this be the problem? */
-        xQueueSendFromISR(g_empty_buffer_queue, &ptr, NULL);
+        /* DO NOT USE xQueueSendFromISR().
+         * It causes weird file write errors and corrupts the entire file system
+         * when the logger task is running.
+         */
+        xQueueSend(g_empty_buffer_queue, &ptr, 0);
     }
 
 #if (FILE_LOGGER_KEEP_FILE_OPEN)
@@ -302,12 +300,22 @@ static bool logger_internal_init(int logger_priority)
 
     /* failure case to delete allocated memory */
     failure:
-        if (gp_file_buffer) free(gp_file_buffer);
+        if (gp_file_buffer) {
+            free(gp_file_buffer);
+            gp_file_buffer = NULL;
+        }
+
+        if (g_empty_buffer_queue) {
+            for (i = 0; i < FILE_LOGGER_NUM_BUFFERS; i++) {
+                if (xQueueReceive(g_empty_buffer_queue, &ptr, 0)) {
+                    free (ptr);
+                }
+            }
+        }
+
         /* Delete g_write_buffer_queue */
         /* Delete g_empty_buffer_queue */
-        for (i = 0; i < FILE_LOGGER_MSG_BUFFERS; i++) {
-            if (gp_buffer_ptrs[i]) free(gp_buffer_ptrs[i]);
-        }
+
         return (!success);
 }
 
@@ -346,46 +354,12 @@ void logger_init(int logger_priority)
     }
 }
 
-static char * logger_get_buffer_ptr(const bool os_running)
-{
-    char * buffer = NULL;
-
-    /* Get an available buffer to write the data to, and if OS is not running, just use our first buffer */
-    if (!os_running) {
-        buffer = gp_buffer_ptrs[0];
-    }
-    else if (!xQueueReceive(g_empty_buffer_queue, &buffer, OS_MS(FILE_LOGGER_BLOCK_TIME_MS))) {
-        ++g_blocked_calls;
-
-        /* This time, just block forever until we get a buffer */
-        xQueueReceive(g_empty_buffer_queue, &buffer, portMAX_DELAY);
-    }
-
-    return buffer;
-}
-
-static void logger_write_log_message(char * buffer, const bool os_running)
-{
-    size_t len = 0;
-
-    /* Send the buffer to the queue for the logger task to write */
-    if (os_running) {
-        xQueueSend(g_write_buffer_queue, &buffer, portMAX_DELAY);
-    }
-    else {
-        len = strlen(buffer);
-        buffer[len] = '\n';
-        buffer[++len] = '\0';
-        logger_write_to_file(buffer, len);
-    }
-}
-
 void logger_log(logger_msg_t type, const char * filename, const char * func_name, unsigned line_num,
                 const char * msg, ...)
 {
+    uint32_t len = 0;
     char * buffer = NULL;
     char * temp_ptr = NULL;
-    uint32_t len = 0;
     const rtc_t time = rtc_gettime();
     const unsigned int uptime = sys_get_uptime_ms();
     const bool os_running = (taskSCHEDULER_RUNNING == xTaskGetSchedulerState());
@@ -422,7 +396,7 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
         const char *func_parens  = func_name[0] ? "()" : "";
 
         /* Write the header including time, filename, function name etc */
-        len = sprintf(buffer, "%u/%u,%02d:%02d:%02d,%u,%s,%s,%s%s,%u,",
+        len = sprintf(buffer, "%d/%d,%02d:%02d:%02d,%u,%s,%s,%s%s,%u,",
                       mon, day, hr, min, sec, up, log_type_str, filename, func_name, func_parens, line_num);
     } while (0);
 
@@ -442,7 +416,7 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
     do {
         va_list args;
         va_start(args, msg);
-        vsnprintf(buffer + len, FILE_LOGGER_MSG_MAX_LEN-len-1, msg, args);
+        vsnprintf(buffer + len, FILE_LOGGER_LOG_MSG_MAX_LEN-len-1, msg, args);
         va_end(args);
     } while (0);
 
@@ -451,17 +425,14 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
 
 void logger_log_raw(const char * msg, ...)
 {
-    char * buffer = NULL;
     const bool os_running = (taskSCHEDULER_RUNNING == xTaskGetSchedulerState());
-
-    /* Get an available buffer */
-    buffer = logger_get_buffer_ptr(os_running);
+    char * buffer = logger_get_buffer_ptr(os_running);
 
     /* Print the actual user message to the buffer */
     do {
         va_list args;
         va_start(args, msg);
-        vsnprintf(buffer, FILE_LOGGER_MSG_MAX_LEN-1, msg, args);
+        vsnprintf(buffer, FILE_LOGGER_LOG_MSG_MAX_LEN-1, msg, args);
         va_end(args);
     } while (0);
 

@@ -200,7 +200,13 @@ void high_level_init(void)
     {
         printf("FLASH not formatted, formatting now ... ");
         printf("%s\n", FR_OK == Storage::getFlashDrive().format() ? "Done" : "Error");
-        hl_mount_storage(Storage::getFlashDrive(), " Flash ");
+
+        if (!hl_mount_storage(Storage::getFlashDrive(), " Flash "))
+        {
+            printf("SPI FLASH is possibly damaged!\n");
+            printf("Page size: %u\n", (unsigned) flash_get_page_size());
+            printf("Mem  size: %u (raw bytes)\n", (unsigned) (flash_get_page_count() * flash_get_page_size()));
+        }
     }
 
     hl_mount_storage(Storage::getSDDrive(), "SD Card");
@@ -256,8 +262,8 @@ static bool hl_mount_storage(FileSystemObject& drive, const char* pDescStr)
 
     if(mounted && FR_OK == drive.getDriveInfo(&totalKb, &availKb))
     {
-        const char *size = (totalKb < 1000) ? "KB" : "MB";
-        unsigned int div = (totalKb < 1000) ? 1 : 1024;
+        const char *size = (totalKb < (32*1024)) ? "KB" : "MB";
+        unsigned int div = (totalKb < (32*1024)) ? 1 : 1024;
 
         printf("%s: OK -- Capacity %-5d%s, Available: %-5u%s\n",
                pDescStr, totalKb/div, size, availKb/div, size);

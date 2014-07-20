@@ -221,7 +221,8 @@ static void flash_perform_page_io_of_fatfs_sector(flash_io_func_t func, uint8_t*
     /* If pages are 528 bytes, we need to calculate the real address here */
     else if (FLASH_PAGESIZE_528 == g_flash_pagesize) {
         const uint32_t pagenum = (addr / FLASH_SECTOR_SIZE);
-        addr = (pagenum << FLASH_PAGENUM_BIT_OFFSET);
+        /* 528 byte page requires 10 address bits, then 12 page number bits, and 2 dummy bits */
+        addr = (pagenum << (FLASH_PAGENUM_BIT_OFFSET + 1));
         func(pData, addr, FLASH_SECTOR_SIZE);
     }
     /* If pages are 264 bytes, we need to read two of them with different addresses */
@@ -256,7 +257,7 @@ DSTATUS flash_initialize()
     }
 
     if (FLASH_MANUFACTURER_ID == sig1 &&
-        (sig2 >= flash_cap_first_valid && sig2 < flash_cap_last_valid)
+        (sig2 >= flash_cap_first_valid && sig2 <= flash_cap_last_valid)
         )
     {
         g_flash_capacity = (flash_cap_t) sig2;
