@@ -50,8 +50,8 @@ void FlightStabilizer::enablePidIoLogging(uint32_t frequencyMs)
 void FlightStabilizer::computePitchRollYawValues(iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro)
 {
     threeAxisVector_t m = magno.getAngularData();
-    threeAxisVector_t a = acc.getVectorData();
-    threeAxisVector_t g = gyro.getVectorData();
+    threeAxisVector_t a = acc.getAcceleroData();
+    threeAxisVector_t g = gyro.getGyroData();
 
     /* Avoid warnings until we use these values */
     (void) m;
