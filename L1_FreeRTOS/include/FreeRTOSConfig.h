@@ -102,6 +102,7 @@
         priority_8,
         priority_9,
         priority_10,
+        priority_11,
     } os_priorities_t;
 #else
 #error "Invalid priorities configured"

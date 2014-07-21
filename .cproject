@@ -174,7 +174,7 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="_build">
-			<resource resourceType="PROJECT" workspacePath="/lpc1758_freertos"/>
+			<resource resourceType="PROJECT" workspacePath="/quadcopter"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>

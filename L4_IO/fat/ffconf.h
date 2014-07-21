@@ -10,7 +10,7 @@
 / Functions and Buffer Configurations
 /---------------------------------------------------------------------------*/
 
-#define	_FS_TINY		1	/* 0:Normal or 1:Tiny */
+#define	_FS_TINY		0	/* 0:Normal or 1:Tiny */
 /* When _FS_TINY is set to 1, it reduces memory consumption _MAX_SS bytes each
 /  file object. For file data transfer, FatFs uses the common sector buffer in
 /  the file system object (FATFS) instead of private sector buffer eliminated
@@ -41,7 +41,7 @@
 /* To enable f_mkfs() function, set _USE_MKFS to 1 and set _FS_READONLY to 0 */
 
 
-#define	_USE_FASTSEEK	1	/* 0:Disable or 1:Enable */
+#define	_USE_FASTSEEK	0	/* 0:Disable or 1:Enable */
 /* To enable fast seek feature, set _USE_FASTSEEK to 1. */
 
 
@@ -182,11 +182,20 @@
 /*---------------------------------------------------------------------------/
 / System Configurations
 /---------------------------------------------------------------------------*/
+#if 0
 #include "sys_config.h"
 #define	_FS_LOCK	    MAX_FILES_OPENED	/* 0:Disable or >=1:Enable */
+#else
+#define _FS_LOCK        0                   /* 0:Disable or >=1:Enable */
+#endif
 /* To enable file lock control feature, set _FS_LOCK to non-zero value.
 /  The value defines how many files/sub-directories can be opened simultaneously
-/  with file lock control. This feature uses bss _FS_LOCK * 12 bytes. */
+/  with file lock control. This feature uses bss _FS_LOCK * 12 bytes.
+ *
+ * This seems like only an issue while opening a file in write permission, and
+ * since opening files multiple times with read permission is okay, there is no
+ * need for this.
+ */
 
 #include "FreeRTOS.h"
 #include "semphr.h"

@@ -121,7 +121,7 @@ bool battery_monitor_task::run(void *p)
         mPrevMilliVolts = milliVolts;
 
         /* use commas to be in-line with CSV format to easily plot in excel */
-        LOG_INFO_SIMPLE("Battery millivolts, %u, estimated charge %%, %u, (%u/%u)",
+        LOG_SIMPLE_MSG("Battery millivolts, %u, estimated charge %%, %u, (%u/%u)",
                         milliVolts, percent, mLowestMilliVolts, mHighestMilliVolts);
     }
 

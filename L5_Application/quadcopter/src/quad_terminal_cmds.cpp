@@ -65,7 +65,9 @@ CMD_HANDLER_FUNC(quadcopterPidLogHandler)
 
     if (cmdParams.beginsWithIgnoreCase("status"))
     {
-        output.printf("Blocked logger calls: %i\n", logger_get_blocked_call_count());
+        output.printf("   Blocked logger calls : %i\n", logger_get_blocked_call_count());
+        output.printf("      Buffers watermark : %i\n", logger_get_num_buffers_watermark());
+        output.printf("Highest file write time : %i ms\n", logger_get_highest_file_write_time_ms());
     }
     else if (cmdParams.beginsWithIgnoreCase("pid"))
     {
@@ -78,6 +80,20 @@ CMD_HANDLER_FUNC(quadcopterPidLogHandler)
 
         Quadcopter::getInstance().enablePidIoLogging(ms);
         output.printf("%s PID logging every %u ms\n", (ms > 0) ? "Enabled" : "Disabled", ms);
+    }
+    /* Just to test out the logger */
+    else if (cmdParams.beginsWithIgnoreCase("test"))
+    {
+        int count = 0;
+        cmdParams.scanf("%*s %u", &count);
+        cmdParams.eraseFirstWords(2);
+
+        for (int i = 0; i < count; i++) {
+            if (0 == (i%100)) {
+                output.printf("Logging message #%i\n", i);
+            }
+            LOG_INFO(cmdParams());
+        }
     }
     else
     {

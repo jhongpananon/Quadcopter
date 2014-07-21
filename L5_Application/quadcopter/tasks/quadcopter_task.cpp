@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "FreeRTOS.h"
+#include "task.h"
 #include "semphr.h"
 
 #include "quad_tasks.hpp"
@@ -25,7 +26,7 @@
  * This should not be faster than the sensor frequency.  ESCs can usually go from 50-400Hz.
  * 100Hz is ideal for a Quadcopter, while > 100Hz may provide smoother operation.
  */
-#define QUADCOPTER_ESC_UPDATE_FREQUENCY   (125)
+#define QUADCOPTER_ESC_UPDATE_FREQUENCY   (100)
 
 
 
@@ -174,6 +175,13 @@ bool quadcopter_task::taskEntry(void)
 
     /* "Disk" data is restored at this point, so we set it to the Quadcopter class */
     mQuadcopter.setLowBatteryTriggerPercentage(mLowBatteryTriggerPercent);
+
+    while (0 != (xTaskGetTickCount() % mSensorPollFrequencyMs) )
+    {
+        /* Wait until we get aligned timer just so that the logging will happen
+         * at even multiples of the sensor frequency.
+         */
+    }
 
     return success;
 }

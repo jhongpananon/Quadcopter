@@ -85,7 +85,11 @@
  */
 int main(void)
 {
-#define MINIMAL_TASKS
+    /* Undefine minimal tasks to run all tasks.
+     * #define minimal tasks to only run quadcopter and terminal tasks
+     */
+    // #define MINIMAL_TASKS
+
 #ifndef MINIMAL_TASKS
     /* Very important to use & for reference - I learned it the hard way :( */
     Uart2 &bluetoothUart = Uart2::getInstance();
@@ -100,31 +104,26 @@ int main(void)
     gpsUart.init      (38400, 128, 32);
 #endif
 
-    /* Log a message to initialize the logger task and log the time of startup */
-    LOG_INFO_SIMPLE("System Startup");
-
     /* Quadcopter task should be the highest priority to process the flight controller algorithms
      * Nothing should be equal or above this priority because we do not want this task to ever
      * be preempted by another task.
      */
-    scheduler_add_task(new quadcopter_task (priority_10));
+    scheduler_add_task(new quadcopter_task (priority_11));
 
-    /* Priority 9 available, possibly for pressure sensor computations */
+    /* Priority 10 available, possibly for pressure sensor computations */
 
 #ifndef MINIMAL_TASKS
     /* The kill-switch task with high priority (consumes very little CPU) */
-    scheduler_add_task(new kill_switch_task(priority_8));
+    scheduler_add_task(new kill_switch_task(priority_9));
 
     /* Consumes very little CPU, but needs high priority to handle mesh network ACKs */
-    scheduler_add_task(new wirelessTask    (priority_7));
+    scheduler_add_task(new wirelessTask    (priority_8));
 #endif
 
-    /* Priority 6 available */
+    /* Priority 7 available */
 
     /* Terminal task needs high priority to access the system in case a task gets stuck */
-    scheduler_add_task(new terminalTask    (priority_5));
-
-    /* Priority 4 available */
+    scheduler_add_task(new terminalTask    (priority_6));
 
 #ifndef MINIMAL_TASKS
     /* GPS and RC receiver tasks can execute and miss their deadline without a big issue.
@@ -137,12 +136,18 @@ int main(void)
      * per millisecond.  So a 100 char string would take 25ms, so 100 sized queue should be
      * good enough such that this task won't need any CPU for 25ms.
      */
-    scheduler_add_task(new gps_task       (priority_3, &gpsUart));
-    scheduler_add_task(new rc_remote_task (priority_3));
+    scheduler_add_task(new rc_remote_task (priority_5));
+    scheduler_add_task(new gps_task       (priority_4, &gpsUart));
 
     /* Low priority tasks are designed to only execute if there is any CPU left */
-    scheduler_add_task(new battery_monitor_task (priority_2));
+    scheduler_add_task(new battery_monitor_task (priority_3));
 #endif
+
+    /* Initialize the logger and the logger task */
+    logger_init(priority_2);
+
+    /* Log the time of Quadcopter startup */
+    LOG_SIMPLE_MSG("Quadcopter Startup");
 
     /* Priority 1 is the absolute lowest priority; it is the CPU IDLE task priority */
 
