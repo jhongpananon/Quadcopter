@@ -188,7 +188,7 @@ bool quadcopter_task::taskEntry(void)
 
 bool quadcopter_task::run(void *p)
 {
-    const uint32_t loopStart = sys_get_high_res_timer_us();
+    const uint32_t loopStart = sys_get_uptime_us();
     const uint32_t millis = sys_get_uptime_ms();
 
     /* Detect any "call rate" skew in case we are not getting called at precise timings */
@@ -220,7 +220,7 @@ bool quadcopter_task::run(void *p)
     }
 
     /* Capture and store the highest time we spend in our Quadcopter logic's loop */
-    const uint32_t loopEnd = sys_get_high_res_timer_us();
+    const uint32_t loopEnd = sys_get_uptime_us();
     const uint32_t diff = (loopEnd - loopStart);
     if (mHighestLoopTimeUs < diff) {
         mHighestLoopTimeUs = diff;

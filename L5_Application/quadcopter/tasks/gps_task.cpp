@@ -15,7 +15,7 @@
 
 
 /// Define the stack size this task is estimated to use
-#define GPS_TASK_STACK_BYTES        (3 * 512)
+#define GPS_TASK_STACK_BYTES        (4 * 512)
 
 
 

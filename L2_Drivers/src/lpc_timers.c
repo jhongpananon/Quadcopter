@@ -21,16 +21,6 @@
 
 
 
-/**
- * @returns the timer structure pointer based on the timer parameter
- */
-static inline LPC_TIM_TypeDef* lpc_timer_get_struct(const lpc_timer_t timer)
-{
-    const uint32_t timerMemBases[] = { LPC_TIM0_BASE, LPC_TIM1_BASE, LPC_TIM2_BASE, LPC_TIM3_BASE };
-    LPC_TIM_TypeDef *pTimerStruct = (LPC_TIM_TypeDef*) timerMemBases[timer];
-    return pTimerStruct;
-}
-
 void lpc_timer_enable(const lpc_timer_t timer, const uint32_t us_per_tick)
 {
     LPC_TIM_TypeDef *pTimerStruct = lpc_timer_get_struct(timer);
@@ -42,6 +32,7 @@ void lpc_timer_enable(const lpc_timer_t timer, const uint32_t us_per_tick)
     lpc_pclk (pclk [timer], clkdiv_1);
 
     /* Enable the timer, and increment on PCLK */
+    pTimerStruct->TC = 0;
     pTimerStruct->TCR = 1;
     pTimerStruct->CTCR = 0;
 

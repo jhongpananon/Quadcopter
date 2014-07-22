@@ -53,7 +53,7 @@ extern "C" {
 #define TERMINAL_USE_CAN_BUS_HANDLER    0             ///< CAN bus terminal command
 
 
-// XXX Need to test why logger is failing, is it because of 24Mhz SPI?  Just slowing this down to 16 for now
+
 #define SPI1_CLOCK_SPEED_MHZ            24          ///< Max speed of SPI1 for SD Card and Flash memory
 #define SPI0_CLOCK_SPEED_MHZ            8           ///< Nordic wireless requires 1-8Mhz max
 #define I2C2_CLOCK_SPEED_KHZ            100         ///< 100Khz is standard I2C speed
@@ -62,7 +62,7 @@ extern "C" {
 #define LOG_BOOT_INFO_TO_FILE           0           ///< Log a boot message to "boot.csv" file upon every boot
 #define LOG_BOOT_INFO_FILENAME          "boot.csv"  ///< Boot info is stored at this filename
 #define DISK_TLM_NAME                   "disk"      ///< Filename to save "disk" telemetry variables
-#define MAX_FILES_OPENED                5           ///< Maximum files that can be opened at once
+#define MAX_FILES_OPENED                3           ///< Maximum files that can be opened at once
 #define ENABLE_TELEMETRY                1           ///< Enable telemetry system. C_FILE_IO forced enabled if enabled
 #define ENABLE_C_FILE_IO                0           ///< Allow stdio fopen() fclose() to redirect to ff.h
 
@@ -102,9 +102,6 @@ unsigned int sys_get_cpu_clock();
 
 #define DESIRED_CPU_CLOCK	(96 * 1000 * 1000UL)    ///< Define the CPU speed you desire, must be between 1-100Mhz
 #define FALLBACK_CPU_CLOCK  (24 * 1000 * 1000UL)    ///< Do not change.  This is the fall-back CPU speed if DESIRED_CPU_CLOCK cannot be attained
-
-#define TIMER0_US_PER_TICK  (10)                    ///< Microseconds per tick for Timer0 that is used by FreeRTOS run-time stats
-
 /**
  * Watchdog timeout in milliseconds
  * Value cannot be greater than 1,000,000 which is too large of a value

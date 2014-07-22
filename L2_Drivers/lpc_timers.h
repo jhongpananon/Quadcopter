@@ -29,11 +29,14 @@
 extern "C" {
 #endif
 #include <stdint.h>
+#include "LPC17xx.h"
 
 
 
 /**
  * The type of timers supported by LPC17xx
+ * Note that for the SJ-One project, lpc_timer1 is being used by lpc_sys.c
+ * to carry out several background services and capture IR receiver signals.
  */
 typedef enum {
     lpc_timer0,
@@ -41,6 +44,24 @@ typedef enum {
     lpc_timer2,
     lpc_timer3,
 } lpc_timer_t;
+
+/**
+ * @returns the timer structure pointer based on the timer parameter
+ */
+static inline LPC_TIM_TypeDef* lpc_timer_get_struct(const lpc_timer_t timer)
+{
+    const uint32_t timer_mem_bases[] = { LPC_TIM0_BASE, LPC_TIM1_BASE, LPC_TIM2_BASE, LPC_TIM3_BASE };
+    return (LPC_TIM_TypeDef*) timer_mem_bases[timer];
+}
+
+/**
+ * @returns the timer ISR number based ont he timer parameter
+ */
+static inline IRQn_Type lpc_timer_get_irq_num(const lpc_timer_t timer)
+{
+    const IRQn_Type irqs[] = { TIMER0_IRQn, TIMER1_IRQn, TIMER2_IRQn, TIMER3_IRQn };
+    return irqs[timer];
+}
 
 /**
  * Enables and starts the timer with the given tick rate

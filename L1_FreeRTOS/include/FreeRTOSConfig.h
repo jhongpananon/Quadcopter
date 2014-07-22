@@ -68,12 +68,12 @@
 #include "sys_config.h"
 #define configUSE_PREEMPTION		            1   ///< One task can preempt another task (if equal or higher priority)
 #define configUSE_IDLE_HOOK			            1   ///< Using IDLE task can put CPU to low power mode
-#define configUSE_TICK_HOOK 		            1   ///< Every timer interrupt calls the tick function
+#define configUSE_TICK_HOOK 		            0   ///< Every timer interrupt calls the tick function
 #define configUSE_MALLOC_FAILED_HOOK            1   ///< If memory runs out, the hook function is called
 
 #define configCPU_CLOCK_HZ			            (DESIRED_CPU_CLOCK)
 #define configTICK_RATE_HZ			            ( 500 )
-#define configMAX_PRIORITIES			        ( 10 )
+#define configMAX_PRIORITIES			        ( 11 )
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 
 
@@ -90,7 +90,7 @@
     #define PRIORITY_MEDIUM     1
     #define PRIORITY_HIGH       2
     #define PRIORITY_CRITICAL 	3
-#elif (configMAX_PRIORITIES == 10)
+#elif (configMAX_PRIORITIES == 11)
     typedef enum {
         priority_1 = 0,
         priority_2,

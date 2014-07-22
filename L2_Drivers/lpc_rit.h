@@ -16,32 +16,37 @@
  *          p r e e t . w i k i @ g m a i l . c o m
  */
 
-#include "FreeRTOSConfig.h"
-#include "lpc_sys.h"
-
-
-
-#if (1 == configGENERATE_RUN_TIME_STATS)
 /**
- * This stores the "start" time value.  The system timer keeps running, and this
- * variable provides us the capability to reset the FreeRTOS timer without having
- * to reset the source or originating timer.
+ * @file
+ * @ingroup Drivers
+ *
+ * This API provides a means to start, stop, and hookup an ISR function to RIT
  */
-static uint64_t g_freertos_runtime_timer_start = 0;
+#ifndef LPC_RIT_TIMER_H
+#define LPC_RIT_TIMER_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <stdint.h>
+#include <stdbool.h>
+#include "lpc_sys.h" // void_func_t
+
+/**
+ * Setup a repetitive callback function at the given time.
+ * @param [in] function  The void function name
+ * @param [in] time_ms   The time in milliseconds
+ */
+void sys_rit_setup(void_func_t function, uint32_t time_ms);
+
+/// Disables the RIT setup by sys_rit_setup()
+void sys_rit_disable(void);
+
+/// @returns true if the RIT is running.
+bool sys_rit_running(void);
 
 
 
-void vConfigureTimerForRunTimeStats( void )
-{
-    /* Nothing to do, system timer should already be setup by high_level_init.cpp */
-    g_freertos_runtime_timer_start = sys_get_uptime_us();
-}
-unsigned int uxGetTimerForRunTimeStats()
-{
-    return (sys_get_uptime_us() - g_freertos_runtime_timer_start);
-}
-void resetRunTimeCounter()
-{
-    g_freertos_runtime_timer_start = sys_get_uptime_us();
+#ifdef __cplusplus
 }
 #endif
+#endif /* LPC_RIT_TIMER_H */

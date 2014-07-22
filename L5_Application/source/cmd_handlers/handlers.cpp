@@ -70,17 +70,22 @@ CMD_HANDLER_FUNC(taskListHandler)
     // For percentage calculations.
     totalRunTime /= 100UL;
 
-    output.printf("%10s Sta Pr Stack CPU%%          Time\n", "Name", TIMER0_US_PER_TICK);
-    for(unsigned portBASE_TYPE i = 0; i < uxArraySize; i++)
+    output.printf("%10s Sta Pr Stack CPU%%          Time\n", "Name");
+    for(unsigned priorityNum = 0; priorityNum < configMAX_PRIORITIES; priorityNum++)
     {
-        TaskStatus_t *e = &status[i];
-        const unsigned int cpuPercent = (0 == totalRunTime) ? 0 : e->ulRunTimeCounter / totalRunTime;
-        const uint32_t timeMs = (uint64_t) e->ulRunTimeCounter * TIMER0_US_PER_TICK / 1000;
-        const uint32_t stackInBytes = 4 * e->usStackHighWaterMark;
+        /* Print in sorted priority order */
+        for (unsigned i = 0; i < uxArraySize; i++) {
+            TaskStatus_t *e = &status[i];
+            if (e->uxBasePriority == priorityNum) {
+                const uint32_t cpuPercent = (0 == totalRunTime) ? 0 : e->ulRunTimeCounter / totalRunTime;
+                const uint32_t timeMs = (uint64_t) e->ulRunTimeCounter / 1000;
+                const uint32_t stackInBytes = 4 * e->usStackHighWaterMark;
 
-        output.printf("%10s %s %2u %5u %4u %10u ms\n",
-                      e->pcTaskName, taskStatusTbl[e->eCurrentState], e->uxBasePriority,
-                      stackInBytes, cpuPercent, timeMs);
+                output.printf("%10s %s %2u %5u %4u %10u ms\n",
+                              e->pcTaskName, taskStatusTbl[e->eCurrentState], e->uxBasePriority,
+                              stackInBytes, cpuPercent, timeMs);
+            }
+        }
     }
 
     if (uxTaskGetNumberOfTasks() > maxTasks) {
