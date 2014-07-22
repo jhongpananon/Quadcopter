@@ -20,8 +20,8 @@
  * @file
  */
  
-#ifndef I2C_DEVICE_BASE_HPP_
-#define I2C_DEVICE_BASE_HPP_
+#ifndef i2c2_device_HPP_
+#define i2c2_device_HPP_
 
 #include "I2C2.hpp"
 
@@ -39,11 +39,11 @@
 
 
 
-class I2C_Device_Base
+class i2c2_device
 {
 protected:
     /// Constructor of this base class that takes addr as a parameter
-    I2C_Device_Base(unsigned char addr) : mI2C(I2C2::getInstance()), mOurAddr(addr)
+    i2c2_device(unsigned char addr) : mI2C(I2C2::getInstance()), mOurAddr(addr)
     {
     }
 
@@ -81,6 +81,9 @@ protected:
 private:
     I2C_Base& mI2C; /// Instance of I2C Bus used for communication
     const unsigned char mOurAddr; ///< I2C Address of this device
+
+    // Do not use this constructor
+    i2c2_device();
 };
 
-#endif /* I2C_DEVICE_BASE_HPP_ */
+#endif /* i2c2_device_HPP_ */

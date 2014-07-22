@@ -39,7 +39,7 @@ class iAcceleroIface
 {
     public:
         virtual ~iAcceleroIface() {}
-        virtual threeAxisVector_t getVectorData(void) const = 0;
+        virtual threeAxisVector_t getAcceleroData(void) const = 0;
 };
 
 /**
@@ -49,7 +49,7 @@ class iGyroIface
 {
     public:
         virtual ~iGyroIface() {}
-        virtual threeAxisVector_t getVectorData(void) const = 0;
+        virtual threeAxisVector_t getGyroData(void) const = 0;
 };
 
 
