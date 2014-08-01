@@ -71,7 +71,7 @@
 #define configUSE_TICK_HOOK 		            0   ///< Every timer interrupt calls the tick function
 #define configUSE_MALLOC_FAILED_HOOK            1   ///< If memory runs out, the hook function is called
 
-#define configCPU_CLOCK_HZ			            (DESIRED_CPU_CLOCK)
+#define configCPU_CLOCK_HZ			            (SYS_CFG_DESIRED_CPU_CLK)
 #define configTICK_RATE_HZ			            ( 500 )
 #define configMAX_PRIORITIES			        ( 11 )
 #define configENABLE_BACKWARD_COMPATIBILITY     0
@@ -133,7 +133,7 @@
 #define configMAX_TASK_NAME_LEN		            ( 8 )
 #define configUSE_16_BIT_TICKS                  0       ///< Use 16-bit ticks vs. 32-bits
 #define configIDLE_SHOULD_YIELD                 1       ///< See FreeRTOS documentation
-#define configCHECK_FOR_STACK_OVERFLOW          2       ///< 0=OFF, 1=Simple, 2=Complex
+#define configCHECK_FOR_STACK_OVERFLOW          1       ///< 0=OFF, 1=Simple, 2=Complex
 #define configUSE_ALTERNATIVE_API               0       ///< No need to use deprecated API
 #define configQUEUE_REGISTRY_SIZE               0       ///< See FreeRTOS documentation
 

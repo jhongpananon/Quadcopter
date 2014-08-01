@@ -22,7 +22,7 @@
 
 #include "rtc.h"
 #include "LPC17xx.h"
-#include "sys_config.h" // RTC_VALID_RANGE_YEARS
+#include "sys_config.h" // SYS_CFG_RTC_VALID_YEARS_RANGE
 
 
 
@@ -31,7 +31,7 @@ void rtc_init (void)
     lpc_pconp(pconp_rtc, true);
     LPC_RTC->CCR = 1;           // Enable RTC
 
-    const uint16_t years[] = RTC_VALID_RANGE_YEARS;
+    const uint16_t years[] = SYS_CFG_RTC_VALID_YEARS_RANGE;
     rtc_t time = rtc_gettime();
 
     /* Check for invalid time */
@@ -39,12 +39,6 @@ void rtc_init (void)
        time.min >= 60 || time.sec >= 60 || time.hour >= 24 ||
        time.doy > 365 || time.month > 12 || time.day > 31)
     {
-#if 0
-        printf("TIME RESET : %u/%u/%u,%02u:%02u:%02u",
-                        time.month, time.day, time.year,
-                        time.hour, time.min, time.sec);
-#endif
-
         time.day = 1;
         time.month = 1;
         time.year = years[0];

@@ -19,9 +19,6 @@
 /**
  * @file
  * @brief This file provides LPC peripheral numbers according to LPC17xx datasheet
- *
- * DO NOT INCLUDE THIS FILE DIRECTLY.  IT IS AUTOMATICALLY INCLUDED WHEN YOU
- * INCLUDE LPC17xx.h
  */
 #include <stdint.h>
 #include "LPC17xx.h"
@@ -34,10 +31,10 @@ void lpc_pconp(lpc_pconp_t peripheral, bool on)
 {
     vPortEnterCritical();
     if (on) {
-        LPC_SC->PCONP |= (1 << peripheral);
+        LPC_SC->PCONP |= (UINT32_C(1) << peripheral);
     }
     else {
-        LPC_SC->PCONP &= ~(1 << peripheral);
+        LPC_SC->PCONP &= ~(UINT32_C(1) << peripheral);
     }
     vPortExitCritical();
 }

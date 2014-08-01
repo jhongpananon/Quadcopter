@@ -37,7 +37,7 @@ bool quadcopterRegisterTelemetry(void)
     const char * tlmName = "quadcopter_vars";
     Quadcopter &q = Quadcopter::getInstance();
     tlm_component *quad = tlm_component_get_by_name(tlmName);
-    tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
+    tlm_component *disk = tlm_component_get_by_name(SYS_CFG_DISK_TLM_NAME);
 
     /* If telemetry component not found, then create it
      * When task telemetry is enabled, "quadcopter" component would already exist, so using
@@ -156,7 +156,7 @@ bool quadcopter_task::regTlm(void)
 
     /* Register the variable we want to preserve on the "disk" */
     if (success) {
-        tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
+        tlm_component *disk = tlm_component_get_by_name(SYS_CFG_DISK_TLM_NAME);
         success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
     }
 

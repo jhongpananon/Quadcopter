@@ -21,7 +21,7 @@
 #include "sys_config.h"         // CPU Clock Configuration
 #include "LPC17xx.h"            // LPC MemoryMap
 #include "uart0_min.h"          // Uart0 init
-#include "isr_priorities.h"
+#include "lpc_isr.h"
 #include "lpc_sys.h"
 #include "core_cm3.h"
 #include "fault_registers.h"
@@ -55,6 +55,16 @@ static void configure_flash_acceleration(unsigned int clock)
  */
 static void configure_interrupt_priorities()
 {
+    /* Set CPU core priorities, cannot set priority on the NMI interrupt though. */
+    // NVIC_SetPriority(NonMaskableInt_IRQn,   IP_highest);
+    NVIC_SetPriority(MemoryManagement_IRQn, IP_highest);
+    NVIC_SetPriority(BusFault_IRQn,         IP_highest);
+    NVIC_SetPriority(UsageFault_IRQn,       IP_highest);
+    NVIC_SetPriority(SVCall_IRQn,           IP_highest);
+    NVIC_SetPriority(DebugMonitor_IRQn,     IP_highest);
+    NVIC_SetPriority(PendSV_IRQn,           IP_highest);
+    NVIC_SetPriority(SysTick_IRQn,          IP_highest);
+
     /* The following priorities are altered from default: */
     NVIC_SetPriority(UART0_IRQn,    IP_uart);
     NVIC_SetPriority(UART1_IRQn,    IP_uart);
@@ -70,7 +80,6 @@ static void configure_interrupt_priorities()
     NVIC_SetPriority(EINT2_IRQn,    IP_eint);
     NVIC_SetPriority(EINT3_IRQn,    IP_eint);
     NVIC_SetPriority(CAN_IRQn,      IP_can);
-    NVIC_SetPriority(RIT_IRQn,      IP_RIT);
 
     /* The following use default priorities (unless changed) */
     NVIC_SetPriority(WDT_IRQn,          IP_watchdog);
@@ -91,6 +100,7 @@ static void configure_interrupt_priorities()
     NVIC_SetPriority(MCPWM_IRQn,        IP_mcpwm);
     NVIC_SetPriority(QEI_IRQn,          IP_qei);
     NVIC_SetPriority(PLL1_IRQn,         IP_pll1);
+    NVIC_SetPriority(RIT_IRQn,          IP_RIT);
     NVIC_SetPriority(USBActivity_IRQn,  IP_usbact);
     NVIC_SetPriority(CANActivity_IRQn,  IP_canact);
 }
@@ -138,24 +148,28 @@ static void print_boot_info(void)
 
 /**
  * Initializes the minimal system including CPU Clock, UART, and Flash accelerator
- * Be careful of the order of operations!!!
+ * Be careful of the order of the operations!!!
  */
 void low_level_init(void)
 {
     rtc_init();
     g_rtc_boot_time = rtc_gettime();
 
-    /**
-     * Configure System Clock based on desired clock rate @ sys_config.h
-     * Setup default interrupt priorities that will work with FreeRTOS
-     */
+    /* Configure System Clock based on desired clock rate @ sys_config.h */
     sys_clock_configure();
     configure_flash_acceleration(sys_get_cpu_clock());
+
+    /* Setup default interrupt priorities that will work with FreeRTOS */
     configure_interrupt_priorities();
+
+    /* These methods shouldn't be needed but doing it anyway to be safe */
+    NVIC_SetPriorityGrouping(0);
+    __set_BASEPRI(0);
+    __enable_fault_irq();
     __enable_irq();
 
-    // Setup UART with minimum I/O functions
-    uart0_init(UART0_DEFAULT_RATE_BPS);
+    /* Setup UART with minimal I/O functions */
+    uart0_init(SYS_CFG_UART0_BPS);
     sys_set_outchar_func(uart0_putchar);
     sys_set_inchar_func(uart0_getchar);
 
@@ -166,15 +180,13 @@ void low_level_init(void)
     setvbuf(stdout, 0, _IONBF, 0);
     setvbuf(stdin,  0, _IONBF, 0);
 
-    // Initialize newlib fopen() fread() calls support
+    /* Initialize newlib fopen() fread() calls support */
     syscalls_init();
 
-    /**
-     * Enable watchdog to allow us to recover in case of:
-     *  - We attempt to run an application and it's not there
-     *  - Application we ran crashes
-     */
+    /* Enable the watchdog to allow us to recover in an event of system crash */
     sys_watchdog_enable();
+
+    /* Uart and printf() are initialized, so print our boot-up message */
     print_boot_info();
 }
 

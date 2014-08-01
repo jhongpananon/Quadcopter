@@ -63,12 +63,10 @@ CMD_HANDLER_FUNC(taskListHandler)
     // Limit the tasks to avoid heap allocation.
     const unsigned portBASE_TYPE maxTasks = 16;
     TaskStatus_t status[maxTasks];
-    unsigned long totalRunTime = 0;
+    uint32_t totalRunTime = 0;
+    uint32_t tasksRunTime = 0;
     const unsigned portBASE_TYPE uxArraySize =
             uxTaskGetSystemState(&status[0], maxTasks, &totalRunTime);
-
-    // For percentage calculations.
-    totalRunTime /= 100UL;
 
     output.printf("%10s Sta Pr Stack CPU%%          Time\n", "Name");
     for(unsigned priorityNum = 0; priorityNum < configMAX_PRIORITIES; priorityNum++)
@@ -77,16 +75,26 @@ CMD_HANDLER_FUNC(taskListHandler)
         for (unsigned i = 0; i < uxArraySize; i++) {
             TaskStatus_t *e = &status[i];
             if (e->uxBasePriority == priorityNum) {
-                const uint32_t cpuPercent = (0 == totalRunTime) ? 0 : e->ulRunTimeCounter / totalRunTime;
-                const uint32_t timeMs = (uint64_t) e->ulRunTimeCounter / 1000;
-                const uint32_t stackInBytes = 4 * e->usStackHighWaterMark;
+                tasksRunTime += e->ulRunTimeCounter;
 
-                output.printf("%10s %s %2u %5u %4u %10u ms\n",
+                const uint32_t cpuPercent = (0 == totalRunTime) ? 0 : e->ulRunTimeCounter / (totalRunTime/100);
+                const uint32_t timeMs = e->ulRunTimeCounter;
+                const uint32_t stackInBytes = (4 * e->usStackHighWaterMark);
+
+                output.printf("%10s %s %2u %5u %4u %10u us\n",
                               e->pcTaskName, taskStatusTbl[e->eCurrentState], e->uxBasePriority,
                               stackInBytes, cpuPercent, timeMs);
             }
         }
     }
+
+    /* Overhead is the time not accounted towards any of the tasks.
+     * For example, when an ISR happens, that is not part of a task's CPU usage.
+     */
+    const uint32_t overheadUs = (totalRunTime - tasksRunTime);
+    const uint32_t overheadPercent = overheadUs / (totalRunTime / 100);
+    output.printf("%10s --- -- ----- %4u %10u uS\n",
+                  "(overhead)", overheadPercent, overheadUs);
 
     if (uxTaskGetNumberOfTasks() > maxTasks) {
         output.printf("** WARNING: Only reported first %u tasks\n", maxTasks);
@@ -406,7 +414,7 @@ CMD_HANDLER_FUNC(i2cIoHandler)
 
         output.printf("Read status from device 0x%02X: %s: \n", addr, ok ? "OK" : "ERROR");
         for (int i = 0; i < count; i++) {
-            output.printf("    0x%02X: --> 0x%02X:\n", (reg + i), (buffer[i] & 0xFF));
+            output.printf("    0x%02X: 0x%02X\n", (reg + i), (buffer[i] & 0xFF));
         }
     }
     else if (write) {
@@ -465,7 +473,7 @@ CMD_HANDLER_FUNC(newFileHandler)
     output.printf("Sorry, no backspace support :(\n");
 
     while (output.getChar(&c, timeout_ms) && c != end_file) {
-        if (FR_OK != f_write(&file, &c, 1, &bw) && 1 != bw) {
+        if (FR_OK != f_write(&file, &c, 1, &bw) || 1 != bw) {
             output.printf("Error occurred while writing the file\n");
         }
         else {
@@ -561,10 +569,11 @@ CMD_HANDLER_FUNC(rebootHandler)
 
     vTaskDelayMs(2000);
     sys_reboot();
+
     return true;
 }
 
-#if (ENABLE_TELEMETRY)
+#if (SYS_CFG_ENABLE_TLM)
 static void stream_tlm(const char *s, void *arg)
 {
     CharDev *out = (CharDev*) arg;
@@ -585,8 +594,8 @@ CMD_HANDLER_FUNC(telemetryHandler)
         tlm_stream_all(stream_tlm, &output, true);
     }
     else if(cmdParams == "save") {
-        FILE *fd = fopen(DISK_TLM_NAME, "w");
-        tlm_stream_one_file(tlm_component_get_by_name(DISK_TLM_NAME), fd);
+        FILE *fd = fopen(SYS_CFG_DISK_TLM_NAME, "w");
+        tlm_stream_one_file(tlm_component_get_by_name(SYS_CFG_DISK_TLM_NAME), fd);
         fclose(fd);
         output.putline("Telemetry was saved to disk");
     }

@@ -49,7 +49,7 @@ bool battery_monitor_task::init(void)
 
     /* Register disk variables */
     if (success) {
-        tlm_component *disk = tlm_component_get_by_name(DISK_TLM_NAME);
+        tlm_component *disk = tlm_component_get_by_name(SYS_CFG_DISK_TLM_NAME);
         if (success) success = TLM_REG_VAR(disk, mLowestMilliVolts, tlm_uint);
         if (success) success = TLM_REG_VAR(disk, mHighestMilliVolts, tlm_uint);
         if (success) success = TLM_REG_VAR(disk, mMilliVoltDeltaToLog, tlm_uint);

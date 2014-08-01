@@ -19,7 +19,6 @@
 /**
  * @file
  * @brief  Provides the following system services :
- *              - RIT (repetitive interrupt)
  *              - Memory info of the system.
  *              - Configure function to use for printf/scanf
  *              - Get boot type and time
@@ -103,7 +102,9 @@ void sys_set_inchar_func(char_func_t func);
 
 
 /**
- * Sets up the system timer that drives the time needed to get uptime in ms and us.
+ * Sets up the system timer that drives the time needed to get uptime in ms and us
+ * along with some background services.
+ * @see SYS_CFG_SYS_TIMER at sys_config.h
  */
 void lpc_sys_setup_system_timer(void);
 
@@ -157,7 +158,7 @@ static inline void sys_reboot()
 }
 
 /**
- * Enables watchdog with reset mode according to WATCHDOG_TIMEOUT_MS macro's value
+ * Enables watchdog with reset mode according to SYS_CFG_WATCHDOG_TIMEOUT_MS macro's value
  */
 static inline void sys_watchdog_enable()
 {
@@ -166,7 +167,7 @@ static inline void sys_watchdog_enable()
      * Therefore watchdog clock = 1Mhz = 1uS
      * Each value of WDTC means 1uS
      */
-    LPC_WDT->WDTC = WATCHDOG_TIMEOUT_MS * 1000;
+    LPC_WDT->WDTC = SYS_CFG_WATCHDOG_TIMEOUT_MS * 1000;
 
     /**
      * Enable Watchdog and Watchdog reset enable

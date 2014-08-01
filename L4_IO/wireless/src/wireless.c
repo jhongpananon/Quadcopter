@@ -56,9 +56,8 @@ static char wireless_get_queued_pkt(QueueHandle_t qhandle, mesh_packet_t *pkt, c
         ok = xQueueReceive(qhandle, pkt, OS_MS(timeout_ms));
     }
     else {
-        long dummy = 0;
         uint64_t timeout_of_char = sys_get_uptime_ms() + timeout_ms;
-        while (! (ok = xQueueReceiveFromISR(qhandle, pkt, &dummy))) {
+        while (! (ok = xQueueReceive(qhandle, pkt, 0))) {
             if (sys_get_uptime_ms() > timeout_of_char) {
                 break;
             }
@@ -68,6 +67,7 @@ static char wireless_get_queued_pkt(QueueHandle_t qhandle, mesh_packet_t *pkt, c
     return ok;
 }
 
+/// ISR callback function upon NRF IRQ rising edge interrupt
 static void nrf_irq_callback(void)
 {
     long yieldRequired = 0;
@@ -131,7 +131,7 @@ void wireless_service(void)
         }
         mesh_service();
     }
-    /* RIT is calling us, so we can't use FreeRTOS API, hence we poll */
+    /* A timer ISR is calling us, so we can't use FreeRTOS API, hence we poll */
     else {
         if (nordic_intr_signal() || mesh_get_pnd_pkt_count() > 0) {
             mesh_service();
@@ -206,9 +206,7 @@ static int nrf_driver_send(void* p, int len)
 	 * restricted to be called from a FreeRTOS task alone.
 	 */
 	if (taskSCHEDULER_RUNNING == xTaskGetSchedulerState()) {
-	    long yieldRequired = 0;
-	    xSemaphoreGiveFromISR(g_nrf_activity_sem, &yieldRequired);
-	    portEND_SWITCHING_ISR(yieldRequired);
+	    xSemaphoreGiveFromISR(g_nrf_activity_sem, NULL);
 	}
 
 	return packetWasSent;
@@ -236,20 +234,18 @@ static int nrf_driver_receive(void* p, int len)
 static int nrf_driver_app_recv(void *p, int len)
 {
     /* Only mesh_pkt_ack_rsp is an ACK packet, others are to REQUEST for ack or nack */
-    long task_woken = 0;
     const mesh_packet_t *pkt = (mesh_packet_t*) p;
     const QueueHandle_t qhandle = (mesh_pkt_ack_rsp == pkt->info.pkt_type) ? g_ack_queue : g_rx_queue;
 
-    int ok = xQueueSendFromISR(qhandle, p, &task_woken);
+    int ok = xQueueSend(qhandle, p, 0);
 
     /* If queue was full, discard oldest data, and push again */
     if (!ok) {
         mesh_packet_t discarded_pkt;
-        xQueueReceiveFromISR(qhandle, &discarded_pkt, NULL);
-        ok = xQueueSendFromISR(qhandle, p, &task_woken);
+        xQueueReceive(qhandle, &discarded_pkt, 0);
+        ok = xQueueSend(qhandle, p, 0);
     }
 
-    portEND_SWITCHING_ISR(task_woken);
     return ok;
 }
 
