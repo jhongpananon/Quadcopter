@@ -233,7 +233,7 @@ bool quadcopter_task::run(void *p)
     {
         printtimer.restart();
         Quadcopter::flightPRY_t ypr = mQuadcopter.getCurrentFlightAngles();
-//        printf("Yaw=[%4d], Pitch=[%4d], Roll=[%4d]\n", ypr.yaw, ypr.pitch, ypr.roll);
+        printf("Yaw=[%4d], Pitch=[%4d], Roll=[%4d]\n", ypr.yaw, ypr.pitch, ypr.roll);
 //        printf("%5.1f, %5.1f, %5.1f -- %5.1f, %5.1f, %5.1f -- %5.1f, %5.1f, %5.1f\n",
 //               mSensorSystem.getAcceleroData().x,
 //               mSensorSystem.getAcceleroData().y,

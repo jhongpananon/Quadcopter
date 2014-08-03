@@ -24,9 +24,9 @@ static float exInt = 0.0;
 static float eyInt = 0.0;
 static float ezInt = 0.0;
 
-static uint32_t lastUpdate = 0;
-static uint32_t now = 0;
-static uint32_t halfT = 0;
+static int lastUpdate = 0;
+static int now = 0;
+static float halfT = 0;
 
 
 //=====================================================================================================
@@ -72,7 +72,7 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
 
   // normalise the measurements
   now = sys_get_uptime_ms();
-  halfT = (now - lastUpdate) / 2000.0;
+  halfT = (now - lastUpdate) / 2000.0f;
   lastUpdate = now;
 
   norm = sqrt(ax*ax + ay*ay + az*az);

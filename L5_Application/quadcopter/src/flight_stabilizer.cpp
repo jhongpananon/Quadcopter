@@ -54,8 +54,6 @@ void FlightStabilizer::computePitchRollYawValues(iMagnoIface& magno, iAcceleroIf
     threeAxisVector_t g = gyro.getGyroAngularData();
     float             ypr[3];
 
-    printf("[%f] [%f] [%f] [%f] [%f] [%f] [%f] [%f] [%f]\n",
-            m.x, m.y, m.z, a.x, a.y, a.z, g.x, g.y, g.x);
     AHRSupdate(g.x, g.y, g.z, a.x, a.y, a.z, m.x, m.y, m.z);
     getYawPitchRoll(ypr);
 
