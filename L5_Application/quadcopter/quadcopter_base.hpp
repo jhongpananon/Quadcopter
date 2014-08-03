@@ -9,7 +9,7 @@
 #include "flight_stabilizer.hpp"
 #include "singleton_template.hpp"
 #include "friend_for_tlm_reg.hpp"
-
+#include "sensor_system.hpp"
 
 
 /**
@@ -122,7 +122,7 @@ class QuadcopterBase : public FlightStabilizer
         void updateFlyLogic(void);
 
         /// Updates the sensor system
-        void processSensorData(const uint32_t timeNowMs);
+        void processSensorData(const uint32_t timeNowMs, SensorSystem &ref);
 
         /// Updates the propeller values
         void updatePropellerValues(const uint32_t timeNowMs);

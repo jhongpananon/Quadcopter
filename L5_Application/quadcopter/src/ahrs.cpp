@@ -136,13 +136,8 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
 
 }
 
-#include <quadcopter.hpp>
 void getQ(float * q)
 {
-  static float val[9] = { 0, 0, 0, 0, 0, 0, 100, 200, 300};
-
-  // gyro values are expressed in deg/sec, the * M_PI/180 will convert it to radians/sec
-  AHRSupdate(val[3] * M_PI/180, val[4] * M_PI/180, val[5] * M_PI/180, val[0], val[1], val[2], val[6], val[7], val[8]);
   q[0] = q0;
   q[1] = q1;
   q[2] = q2;
@@ -159,8 +154,6 @@ void getEuler(float * angles) {
   angles[1] = -asin(2 * q[1] * q[3] + 2 * q[0] * q[2]) * 180/M_PI; // theta
   angles[2] = atan2(2 * q[2] * q[3] - 2 * q[0] * q[1], 2 * q[0] * q[0] + 2 * q[3] * q[3] - 1) * 180/M_PI; // phi
 }
-
-
 
 void getYawPitchRoll(float * ypr) {
   float q[4]; // quaternion

@@ -11,6 +11,7 @@
 
 #include "soft_timer.hpp"
 #include "three_axis_sensor.hpp"
+#include "sensor_system.hpp"
 
 
 
@@ -34,9 +35,6 @@ class quadcopter_task : public scheduler_task
     private:
         quadcopter_task(); ///< Disallow default constructor (no code is defined)
 
-        /// Gets the raw sensor inputs
-        void getSensorInputs(void);
-
         /// Detects and logs timing skew information
         void detectTimingSkew(const uint32_t millis);
 
@@ -45,6 +43,9 @@ class quadcopter_task : public scheduler_task
 
         /// Instance of the Quadcopter
         Quadcopter &mQuadcopter;
+
+        /// Instance of the Sensor System
+        SensorSystem mSensorSystem;
 
         /**
          * The trigger point of "low" battery.

@@ -6,8 +6,8 @@
 
 #include "flight_stabilizer.hpp"
 #include "file_logger.h"
-
-
+#include "ahrs.hpp"
+#include <stdio.h>
 
 FlightStabilizer::FlightStabilizer() :
     mArmed(false),
@@ -49,14 +49,19 @@ void FlightStabilizer::enablePidIoLogging(uint32_t frequencyMs)
 
 void FlightStabilizer::computePitchRollYawValues(iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro)
 {
-    threeAxisVector_t m = magno.getAngularData();
+    threeAxisVector_t m = magno.getMagnoData();
     threeAxisVector_t a = acc.getAcceleroData();
-    threeAxisVector_t g = gyro.getGyroData();
+    threeAxisVector_t g = gyro.getGyroAngularData();
+    float             ypr[3];
 
-    /* Avoid warnings until we use these values */
-    (void) m;
-    (void) a;
-    (void) g;
+    printf("[%f] [%f] [%f] [%f] [%f] [%f] [%f] [%f] [%f]\n",
+            m.x, m.y, m.z, a.x, a.y, a.z, g.x, g.y, g.x);
+    AHRSupdate(g.x, g.y, g.z, a.x, a.y, a.z, m.x, m.y, m.z);
+    getYawPitchRoll(ypr);
+
+    mCurrentAngles.yaw = ypr[0];
+    mCurrentAngles.pitch = ypr[1];
+    mCurrentAngles.roll = ypr[2];
 }
 
 void FlightStabilizer::computeThrottleValues(const uint32_t timeNowMs)

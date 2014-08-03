@@ -29,7 +29,7 @@ class iMagnoIface
 {
     public:
         virtual ~iMagnoIface() {}
-        virtual threeAxisVector_t getAngularData(void) const = 0;
+        virtual threeAxisVector_t getMagnoData(void) const = 0;
 };
 
 /**
@@ -49,7 +49,7 @@ class iGyroIface
 {
     public:
         virtual ~iGyroIface() {}
-        virtual threeAxisVector_t getGyroData(void) const = 0;
+        virtual threeAxisVector_t getGyroAngularData(void) const = 0;
 };
 
 

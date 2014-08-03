@@ -8,7 +8,6 @@
 #include "file_logger.h"
 
 
-
 QuadcopterBase::QuadcopterBase() :
     mQuadcopterMode(mode_manual),
     mInternalMode(imode_full_manual),
@@ -103,10 +102,9 @@ void QuadcopterBase::updateFlyLogic(void)
 
 }
 
-void QuadcopterBase::processSensorData(const uint32_t timeNowMs)
+void QuadcopterBase::processSensorData(const uint32_t timeNowMs, SensorSystem &ref)
 {
-    /* TODO: Now compute PRY from the sensor inputs */
-    // computePitchRollYawValues();
+    computePitchRollYawValues(ref, ref, ref);
 }
 
 void QuadcopterBase::updatePropellerValues(const uint32_t timeNowMs)

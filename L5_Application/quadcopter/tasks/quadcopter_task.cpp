@@ -19,7 +19,7 @@
 #define QUADCOPTER_TASK_STACK_BYTES       (4 * 512)
 
 /// Define the frequency of updating sensors and running the AHRS sensor loop
-#define QUADCOPTER_SENSOR_FREQUENCY       (250)
+#define QUADCOPTER_SENSOR_FREQUENCY       (4)
 
 /**
  * Define the frequency at which the ESC (electronic speed controllers) will update.
@@ -140,6 +140,8 @@ bool quadcopter_task::init(void)
     // Set the frequency of the run() method
     setRunDuration(mSensorPollFrequencyMs);
 
+    success = mSensorSystem.init();
+
     return success;
 }
 
@@ -195,10 +197,10 @@ bool quadcopter_task::run(void *p)
     detectTimingSkew(millis);
 
     /* Get the sensor inputs */
-    getSensorInputs();
+    mSensorSystem.updateSensorData();
 
     /* Update the flight sensor system to update AHRS (pitch, roll, and yaw values) */
-    mQuadcopter.processSensorData(millis);
+    mQuadcopter.processSensorData(millis, mSensorSystem);
 
     /* We apply our flying logic, and update propeller values at ideally slower rate
      * than the sensors.  The ESCs cannot respond faster than about 400Hz anyway.
@@ -226,19 +228,25 @@ bool quadcopter_task::run(void *p)
         mHighestLoopTimeUs = diff;
     }
 
+    static SoftTimer printtimer(250);
+    if (printtimer.expired())
+    {
+        printtimer.restart();
+        Quadcopter::flightPRY_t ypr = mQuadcopter.getCurrentFlightAngles();
+//        printf("Yaw=[%4d], Pitch=[%4d], Roll=[%4d]\n", ypr.yaw, ypr.pitch, ypr.roll);
+//        printf("%5.1f, %5.1f, %5.1f -- %5.1f, %5.1f, %5.1f -- %5.1f, %5.1f, %5.1f\n",
+//               mSensorSystem.getAcceleroData().x,
+//               mSensorSystem.getAcceleroData().y,
+//               mSensorSystem.getAcceleroData().z,
+//               mSensorSystem.getMagnoData().x,
+//               mSensorSystem.getMagnoData().y,
+//               mSensorSystem.getMagnoData().z,
+//               mSensorSystem.getGyroAngularData().x,
+//               mSensorSystem.getGyroAngularData().y,
+//               mSensorSystem.getGyroAngularData().z);
+    }
+
     return true;
-}
-
-void quadcopter_task::getSensorInputs(void)
-{
-    /* TODO Update the sensor values */
-
-    /* Remove this, it was just used to see how long the loop cycle would take while
-     * reading some data over I2C
-     */
-    (void) AS.getX();
-    (void) AS.getY();
-    (void) AS.getZ();
 }
 
 void quadcopter_task::detectTimingSkew(const uint32_t millis)
