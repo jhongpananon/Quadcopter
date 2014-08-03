@@ -216,7 +216,7 @@ void TIMERX_BAD_IRQHandler()
     else
     {
         // Unexpected interrupt, so stay here to trigger watchdog interrupt
-        puts("Unexpected ISR call at lpc_sys.c");
+        printf("Unexpected ISR call at lpc_sys.c 0x%08X\n", (unsigned int) intr_reason);
         while (1) {
             ;
         }

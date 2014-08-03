@@ -77,7 +77,7 @@ extern "C" {
  * lpc_sys_get_uptime_ms(), lpc_sys_get_uptime_us() and periodically resets the watchdog timer
  * along with running the mesh networking task if FreeRTOS is running.
  */
-#define SYS_CFG_SYS_TIMER               0
+#define SYS_CFG_SYS_TIMER               3
 
 /**
  * Watchdog timeout in milliseconds

@@ -226,6 +226,7 @@ extern "C"
  */
 bool IR_Sensor::init()
 {
+#if 0
     /* Power up the timer 1 in case it is off */
     lpc_pconp(pconp_timer1, true);
 
@@ -237,6 +238,7 @@ bool IR_Sensor::init()
 
     // Select P1.18 as CAP1.0 by setting bits 5:4 to 0b11
     LPC_PINCON->PINSEL3 |= (3 << 4);
+#endif
 
     return true;
 }
