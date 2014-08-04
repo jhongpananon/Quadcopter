@@ -19,7 +19,7 @@
 #define QUADCOPTER_TASK_STACK_BYTES       (4 * 512)
 
 /// Define the frequency of updating sensors and running the AHRS sensor loop
-#define QUADCOPTER_SENSOR_FREQUENCY       (4)
+#define QUADCOPTER_SENSOR_FREQUENCY       (250)
 
 /**
  * Define the frequency at which the ESC (electronic speed controllers) will update.
@@ -127,12 +127,10 @@ bool quadcopter_task::init(void)
     bool success = true;
     FlightStabilizer &f = mQuadcopter;
 
-    /* Set the PID's min and max PWM output along with the PID update rate */
+    // Set the PID's min and max PWM output along with the PID update rate
     const float pwmMinPercent = 0;
     const float pwmMaxPercent = 100;
     f.setCommonPidParameters(pwmMinPercent, pwmMaxPercent, mEscUpdateFrequencyMs);
-
-    /* TODO: Set min/max according to the particular sensor */
 
     // Do not update task statistics for this task since it may cause timing skew
     setStatUpdateRate(0);
@@ -140,7 +138,10 @@ bool quadcopter_task::init(void)
     // Set the frequency of the run() method
     setRunDuration(mSensorPollFrequencyMs);
 
-    success = mSensorSystem.init();
+    // Initialize the sensors
+    if (success) {
+        success = mSensorSystem.init();
+    }
 
     return success;
 }
