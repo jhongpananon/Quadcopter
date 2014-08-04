@@ -19,20 +19,20 @@ bool SensorSystem::init(void)
 {
     /* Initialize the acceleration sensor */
     bool a = mI2C.checkDeviceResponse(I2CAddr_LSM303_Accel);
-    mI2C.writeReg(I2CAddr_LSM303_Accel, 0x20, 0x57);
-    mI2C.writeReg(I2CAddr_LSM303_Accel, 0x23, 0x00);
+    mI2C.writeReg(I2CAddr_LSM303_Accel, 0x20, 0x77);    /// Enable the 3-axis and set update rate to 400hz
+    mI2C.writeReg(I2CAddr_LSM303_Accel, 0x23, 0x00);    /// Disable BLE at CTRL_REG4 and set to +/- 2G
 
     /* Initialize the magnometer sensor */
-//    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x00, 0x14);
-//    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x01, 0x80);
     bool m = mI2C.checkDeviceResponse(I2CAddr_LSM303_Mag);
-    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x02, 0);
+    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x00, 0x1C);  /// Set update rate to 220Hz
+    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x01, 0x02);  /// Set gain to +/- 1.3 gauss
+    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x02, 0x00);  /// Continuous conversion mode
 
     /* Initialize the gyroscope */
     bool g = mI2C.checkDeviceResponse(I2CAddr_L3GD20_Gyro);
-    mI2C.writeReg(I2CAddr_L3GD20_Gyro, 0x20, 0);
-    mI2C.writeReg(I2CAddr_L3GD20_Gyro, 0x20, 0x0F);
-    mI2C.writeReg(I2CAddr_L3GD20_Gyro, 0x23, 0x00);
+    mI2C.writeReg(I2CAddr_L3GD20_Gyro, 0x20, 0x00);          /// Reset control register
+    mI2C.writeReg(I2CAddr_L3GD20_Gyro, 0x20, (0xB0 | 0x0F)); /// Enable sensor, the 3 axis, and use 380Hz update rate
+    mI2C.writeReg(I2CAddr_L3GD20_Gyro, 0x23, 0x00);          /// Disable BLE at CTRL_REG4
 
     /* Struct size should be six bytes, and all sensor should have responded */
     return (6 == sizeof(rawSensorVector_t) && a && m && g);
@@ -41,7 +41,7 @@ bool SensorSystem::init(void)
 void SensorSystem::updateSensorData()
 {
     rawSensorVector_t raw;
-    const uint8_t readMultiBytes = 0x80;
+    const uint8_t readMultiBytes = 0x80; ///< Bit7 must be set to perform address auto-increment on accelero and gyro
     const float degPerBitFor250dps = 8.75 / 1000.0f;    ///< Datasheet: 8.75 mdps for 250 deg/sec
     const float degPerSecToRadPerSec = 0.0174532925f;   ///< Standard conversion formula
 
