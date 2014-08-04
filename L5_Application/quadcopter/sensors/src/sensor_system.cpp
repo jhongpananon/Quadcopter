@@ -75,9 +75,12 @@ void SensorSystem::updateSensorData()
     mGyroAngularCachedData.x = (int16_t)(raw.xl | ((uint16_t)raw.xh << 8));
     mGyroAngularCachedData.y = (int16_t)(raw.yl | ((uint16_t)raw.yh << 8));
     mGyroAngularCachedData.z = (int16_t)(raw.zl | ((uint16_t)raw.zh << 8));
-    mGyroAngularCachedData.x *= degPerBitFor250dps * degPerSecToRadPerSec;
-    mGyroAngularCachedData.y *= degPerBitFor250dps * degPerSecToRadPerSec;
-    mGyroAngularCachedData.z *= degPerBitFor250dps * degPerSecToRadPerSec;
+    mGyroAngularCachedData.x *= degPerBitFor250dps;
+    mGyroAngularCachedData.y *= degPerBitFor250dps;
+    mGyroAngularCachedData.z *= degPerBitFor250dps;
+    mGyroAngularCachedData.x *= degPerSecToRadPerSec;
+    mGyroAngularCachedData.y *= degPerSecToRadPerSec;
+    mGyroAngularCachedData.z *= degPerSecToRadPerSec;
 
 //    printf("Gyro = %5.1f, %5.1f, %5.1f\n", mGyroAngularCachedData.x, mGyroAngularCachedData.y, mGyroAngularCachedData.z);
 }
