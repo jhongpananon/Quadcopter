@@ -19,7 +19,7 @@
 #define QUADCOPTER_TASK_STACK_BYTES       (4 * 512)
 
 /// Define the frequency of updating sensors and running the AHRS sensor loop
-#define QUADCOPTER_SENSOR_FREQUENCY       (250)
+#define QUADCOPTER_SENSOR_FREQUENCY       (500)
 
 /**
  * Define the frequency at which the ESC (electronic speed controllers) will update.
@@ -117,7 +117,8 @@ quadcopter_task::quadcopter_task(const uint8_t priority) :
     mLastCallMs(0),
     mLastPidUpdateTimeMs(0),
     mSensorPollFrequencyMs(1000 / QUADCOPTER_SENSOR_FREQUENCY),
-    mEscUpdateFrequencyMs(1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY)
+    mEscUpdateFrequencyMs(1000 / QUADCOPTER_ESC_UPDATE_FREQUENCY),
+    mPrintYpr(0), mPrintAcc(0), mPrintGyro(0), mPrintMagno(0)
 {
     /* Use init() for memory allocation */
 }
@@ -167,6 +168,11 @@ bool quadcopter_task::regTlm(void)
     if (success) {
         tlm_component *dbg = tlm_component_get_by_name("debug");
         success = TLM_REG_VAR(dbg, mHighestLoopTimeUs, tlm_uint);
+
+        TLM_REG_VAR(dbg, mPrintYpr, tlm_uint);
+        TLM_REG_VAR(dbg, mPrintAcc, tlm_uint);
+        TLM_REG_VAR(dbg, mPrintMagno, tlm_uint);
+        TLM_REG_VAR(dbg, mPrintGyro, tlm_uint);
     }
 
     return success;
@@ -201,7 +207,7 @@ bool quadcopter_task::run(void *p)
     mSensorSystem.updateSensorData();
 
     /* Update the flight sensor system to update AHRS (pitch, roll, and yaw values) */
-    mQuadcopter.processSensorData(millis, mSensorSystem);
+    mQuadcopter.processSensorData(mSensorPollFrequencyMs, mSensorSystem);
 
     /* We apply our flying logic, and update propeller values at ideally slower rate
      * than the sensors.  The ESCs cannot respond faster than about 400Hz anyway.
@@ -229,22 +235,35 @@ bool quadcopter_task::run(void *p)
         mHighestLoopTimeUs = diff;
     }
 
-    static SoftTimer printtimer(250);
+    static SoftTimer printtimer(100);
     if (printtimer.expired())
     {
         printtimer.restart();
-        Quadcopter::flightPRY_t ypr = mQuadcopter.getCurrentFlightAngles();
-        printf("Yaw=[%4d], Pitch=[%4d], Roll=[%4d]\n", ypr.yaw, ypr.pitch, ypr.roll);
-//        printf("%5.1f, %5.1f, %5.1f -- %5.1f, %5.1f, %5.1f -- %5.1f, %5.1f, %5.1f\n",
-//               mSensorSystem.getAcceleroData().x,
-//               mSensorSystem.getAcceleroData().y,
-//               mSensorSystem.getAcceleroData().z,
-//               mSensorSystem.getMagnoData().x,
-//               mSensorSystem.getMagnoData().y,
-//               mSensorSystem.getMagnoData().z,
-//               mSensorSystem.getGyroAngularData().x,
-//               mSensorSystem.getGyroAngularData().y,
-//               mSensorSystem.getGyroAngularData().z);
+
+        if (mPrintYpr) {
+            mPrintYpr--;
+            Quadcopter::flightPRY_t ypr = mQuadcopter.getCurrentFlightAngles();
+            printf("Yaw=[%4d], Pitch=[%4d], Roll=[%4d]\n", ypr.yaw, ypr.pitch, ypr.roll);
+        }
+
+        SensorSystem::rawSensorVector_t data;
+        if (mPrintAcc) {
+            mPrintAcc--;
+            data = mSensorSystem.getRawAcceleroData();
+            printf("Accelero: %6d, %6d, %6d\n", data.x, data.y, data.z);
+        }
+
+        if (mPrintGyro) {
+            mPrintGyro--;
+            data = mSensorSystem.getRawGyroAngularData();
+            printf("Gyro: %6d, %6d, %6d\n", data.x, data.y, data.z);
+        }
+
+        if (mPrintMagno) {
+            mPrintMagno--;
+            data = mSensorSystem.getRawMagnoData();
+            printf("Magno: %6d, %6d, %6d\n", data.x, data.y, data.z);
+        }
     }
 
     return true;

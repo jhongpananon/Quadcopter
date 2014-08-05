@@ -9,7 +9,7 @@
 #define AHRS_HPP_
 
 
-void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
+void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz, int);
 void getYawPitchRoll(float *ypr);
 
 

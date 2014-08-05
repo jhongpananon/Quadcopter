@@ -82,7 +82,7 @@ class FlightStabilizer : public MotorControllerIface
          *
          * The next step is to run the PID and find out the throttle values using computeThrottleValues()
          */
-        void computePitchRollYawValues(iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro);
+        void computePitchRollYawValues(const uint32_t loopTimeMs, iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro);
 
         /**
          * Computes the throttle values that should be applied on each motor

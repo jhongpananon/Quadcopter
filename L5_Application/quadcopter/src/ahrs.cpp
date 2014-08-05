@@ -7,7 +7,7 @@
 //----------------------------------------------------------------------------------------------------
 // Definitions
 
-#define Kp 2.0f   // proportional gain governs rate of convergence to accelerometer/magnetometer
+#define Kp 2.0f     // proportional gain governs rate of convergence to accelerometer/magnetometer
 #define Ki 0.005f   // integral gain governs rate of convergence of gyroscope biases
 
 static float q0 = 1.0;
@@ -24,8 +24,6 @@ static float exInt = 0.0;
 static float eyInt = 0.0;
 static float ezInt = 0.0;
 
-static int lastUpdate = 0;
-static int now = 0;
 static float halfT = 0;
 
 
@@ -51,7 +49,7 @@ static float halfT = 0;
 // radians/second, accelerometer and magnetometer units are irrelevant as the vector is normalised.
 //
 //=====================================================================================================
-void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz)
+void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz, int loopTimeMs)
 {
   float norm;
   float hx, hy, hz, bx, bz;
@@ -71,9 +69,7 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
   float q3q3 = q3*q3;
 
   // normalise the measurements
-  now = sys_get_uptime_ms();
-  halfT = (now - lastUpdate) / 2000.0f;
-  lastUpdate = now;
+  halfT = (loopTimeMs) / 2000.0f;
 
   norm = sqrt(ax*ax + ay*ay + az*az);
   ax = ax / norm;

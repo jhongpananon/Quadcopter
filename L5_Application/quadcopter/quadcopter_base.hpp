@@ -122,7 +122,7 @@ class QuadcopterBase : public FlightStabilizer
         void updateFlyLogic(void);
 
         /// Updates the sensor system
-        void processSensorData(const uint32_t timeNowMs, SensorSystem &ref);
+        void processSensorData(const uint32_t loopTimeMs, SensorSystem &ref);
 
         /// Updates the propeller values
         void updatePropellerValues(const uint32_t timeNowMs);

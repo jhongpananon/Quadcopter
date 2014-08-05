@@ -102,9 +102,9 @@ void QuadcopterBase::updateFlyLogic(void)
 
 }
 
-void QuadcopterBase::processSensorData(const uint32_t timeNowMs, SensorSystem &ref)
+void QuadcopterBase::processSensorData(const uint32_t loopTimeMs, SensorSystem &ref)
 {
-    computePitchRollYawValues(ref, ref, ref);
+    computePitchRollYawValues(loopTimeMs, ref, ref, ref);
 }
 
 void QuadcopterBase::updatePropellerValues(const uint32_t timeNowMs)

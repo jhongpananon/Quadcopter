@@ -47,14 +47,14 @@ void FlightStabilizer::enablePidIoLogging(uint32_t frequencyMs)
     mLogFrequencyMs = frequencyMs;
 }
 
-void FlightStabilizer::computePitchRollYawValues(iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro)
+void FlightStabilizer::computePitchRollYawValues(const uint32_t loopTimeMs, iMagnoIface& magno, iAcceleroIface &acc, iGyroIface &gyro)
 {
     threeAxisVector_t m = magno.getMagnoData();
     threeAxisVector_t a = acc.getAcceleroData();
     threeAxisVector_t g = gyro.getGyroAngularData();
     float             ypr[3];
 
-    AHRSupdate(g.x, g.y, g.z, a.x, a.y, a.z, m.x, m.y, m.z);
+    AHRSupdate(g.x, g.y, g.z, a.x, a.y, a.z, m.x, m.y, m.z, loopTimeMs);
     getYawPitchRoll(ypr);
 
     mCurrentAngles.yaw = ypr[0];
