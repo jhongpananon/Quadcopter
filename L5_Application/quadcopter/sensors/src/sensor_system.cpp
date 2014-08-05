@@ -13,17 +13,9 @@
 SensorSystem::SensorSystem() : mI2C(I2C2::getInstance())
 {
     /* Equal operator so much easier than memset() to zero :)  */
-    mRawAccelero = 0;
-    mRawMagno = 0;
-    mRawGyro = 0;
-
-    mCalAccelero = 0;
-    mCalMagno = 0;
-    mCalGyro = 0;
-
-    mAcceleroCachedData = 0;
-    mMagnoCachedData = 0;
-    mGyroAngularCachedData = 0;
+    mAccelero = 0;
+    mMagno = 0;
+    mGyro = 0;
 }
 
 bool SensorSystem::init(void)
@@ -36,7 +28,7 @@ bool SensorSystem::init(void)
     /* Initialize the magnometer sensor */
     bool m = mI2C.checkDeviceResponse(I2CAddr_LSM303_Mag);
     mI2C.writeReg(I2CAddr_LSM303_Mag, 0x00, 0x1C);  /// Set update rate to 220Hz
-    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x01, 0x20);  /// Set gain to +/- 1.3 gauss
+    mI2C.writeReg(I2CAddr_LSM303_Mag, 0x01, 0x60);  /// Set gain to +/- 2.5 gauss (must change convertRawMagno() if this changes)
     mI2C.writeReg(I2CAddr_LSM303_Mag, 0x02, 0x00);  /// Continuous conversion mode
 
     /* Initialize the gyroscope */
@@ -53,96 +45,87 @@ void SensorSystem::updateSensorData(void)
 {
     const uint8_t readMultiBytes = 0x80; ///< Bit7 must be set to perform address auto-increment on accelero and gyro
 
-    /* Read raw data and convert 16-bit data to 12-bit data */
-    mI2C.readRegisters(I2CAddr_LSM303_Accel, 0x28 | readMultiBytes, (char*)&mRawAccelero, sizeof(mRawAccelero));
-    mAcceleroCachedData = convertRawAccelero(mRawAccelero);
+    /* Read and update accelero data */
+    mI2C.readRegisters(I2CAddr_LSM303_Accel, 0x28 | readMultiBytes, (char*)&mAccelero.raw, sizeof(mAccelero.raw));
+    convertRawAccelero(mAccelero);
 
-    /* Read raw data and store it, no conversion needed since magno data just needs a vector without units
-     * We need to byte swap since magno registers are HIGH first then LOW
-     */
-    mI2C.readRegisters(I2CAddr_LSM303_Mag, 0x03, (char*)&mRawMagno, sizeof(mRawMagno));
-    mMagnoCachedData = convertRawMagno(mRawMagno);
+    /* Read and update magno data */
+    mI2C.readRegisters(I2CAddr_LSM303_Mag, 0x03, (char*)&mMagno.raw, sizeof(mMagno.raw));
+    convertRawMagno(mMagno);
 
     /* Read the gyroscope and convert the readings to radians per second that is needed by AHRS algorithm */
-    mI2C.readRegisters(I2CAddr_L3GD20_Gyro, 0x28 | readMultiBytes, (char*)&mRawGyro, sizeof(mRawGyro));
-    mGyroAngularCachedData = convertRawGyro(mRawGyro);
+    mI2C.readRegisters(I2CAddr_L3GD20_Gyro, 0x28 | readMultiBytes, (char*)&mGyro.raw, sizeof(mGyro.raw));
+    convertRawGyro(mGyro);
 }
 
 
-threeAxisVector_t SensorSystem::convertRawAccelero(rawSensorVector_t &raw)
+void SensorSystem::convertRawAccelero(sensorData_t &data)
 {
-    threeAxisVector_t f;
-
-    /* Adafruit is doing this, and I've noticed that the smallest change is 32 at +/- 2G */
-    raw.x >>= 4;
-    raw.y >>= 4;
-    raw.z >>= 4;
+    /* Adafruit is doing this, and I've noticed that the smallest change is 32 at +/- 2G
+     * It looks like actual data resolution is 12-bit, not 16-bit as stated in the datasheet.
+     */
+    data.raw.x >>= 4;
+    data.raw.y >>= 4;
+    data.raw.z >>= 4;
 
     /* Apply calibration values */
-    raw += mCalAccelero;
+    data.raw += data.offset;
 
-    /* Store to float */
-    f.x = raw.x;
-    f.y = raw.y;
-    f.z = raw.z;
-
-    return f;
+    /* Store the end result */
+    data.converted.x = data.raw.x;
+    data.converted.y = data.raw.y;
+    data.converted.z = data.raw.z;
 }
 
-threeAxisVector_t SensorSystem::convertRawGyro(rawSensorVector_t &raw)
+void SensorSystem::convertRawGyro(sensorData_t &data)
 {
-    threeAxisVector_t f;
     const float degPerBitFor250dps = 8.75 / 1000.0f;    ///< Datasheet: 8.75 mdps for 250 deg/sec
     const float degPerSecToRadPerSec = 0.0174532925f;   ///< Standard conversion formula
 
     /* Apply calibration values */
-    raw += mCalGyro;
+    data.raw += data.offset;
 
-    /* Store to float */
-    f.x = raw.x;
-    f.y = raw.y;
-    f.z = raw.z;
+    /* Store the result in floats before we convert to radians per second */
+    data.converted.x = data.raw.x;
+    data.converted.y = data.raw.y;
+    data.converted.z = data.raw.z;
 
     /* Avoid multiplying (degPerBitFor250dps * degPerSecToRadPerSec) since this calculation
-     * is too close to zero value of 32-bit single precision float
+     * is too close to zero value of 32-bit single precision float.
+     * TODO Try dividing by 1000 last to ensure the units don't become zero.
      */
-    f.x *= degPerBitFor250dps;
-    f.y *= degPerBitFor250dps;
-    f.z *= degPerBitFor250dps;
+    data.converted.x *= degPerBitFor250dps;
+    data.converted.y *= degPerBitFor250dps;
+    data.converted.z *= degPerBitFor250dps;
 
-    f.x *= degPerSecToRadPerSec;
-    f.y *= degPerSecToRadPerSec;
-    f.z *= degPerSecToRadPerSec;
-
-    return f;
+    data.converted.x *= degPerSecToRadPerSec;
+    data.converted.y *= degPerSecToRadPerSec;
+    data.converted.z *= degPerSecToRadPerSec;
 }
 
-threeAxisVector_t SensorSystem::convertRawMagno(rawSensorVector_t &raw)
+void SensorSystem::convertRawMagno(sensorData_t &data)
 {
-    threeAxisVector_t f;
+    /* These are the units at +/- 2.5 gauss */
+    const float xyAxisLsbPerGauss = 670.0f;
+    const float zAxisLsbPerGauss = 600.0f;
 
     /* Magno requires byte swap since HIGH byte register is read first before LOW byte */
-    rawSensorVectorByteSwap(raw);
+    data.raw.byteSwap();
 
     /* Apply calibration values */
-    raw += mCalMagno;
+    data.raw += data.offset;
 
     /* Store to float
      * Datasheet says: Range should be 0xF800 -> 0x07FF (-2048 -> +2047)
      */
-    f.x = raw.x;
-    f.y = raw.y;
-    f.z = raw.z;
+    data.converted.x = data.raw.x;
+    data.converted.y = data.raw.y;
+    data.converted.z = data.raw.z;
 
-    return f;
-}
-
-void SensorSystem::rawSensorVectorByteSwap(rawSensorVector_t &raw)
-{
-    uint8_t high;
-    high = raw.xh;  raw.xh = raw.xl; raw.xl = high;
-    high = raw.yh;  raw.yh = raw.yl; raw.yl = high;
-    high = raw.zh;  raw.zh = raw.zl; raw.zl = high;
+    /* Convert to the gauss units to normalize the data of this vector */
+    data.converted.x /= xyAxisLsbPerGauss;
+    data.converted.y /= xyAxisLsbPerGauss;
+    data.converted.z /= zAxisLsbPerGauss;
 }
 
 bool SensorSystem::calibrate(void)
@@ -154,17 +137,15 @@ bool SensorSystem::calibrate(void)
     /* Important to zero out calibration values because updateSensorData() gives us
      * readings after applying the calibration
      */
-    mCalAccelero = 0;
-    mCalMagno = 0;
-    mCalGyro = 0;
+    mAccelero.offset = 0;
 
     /* Find the average zero offset when the sensor is at rest */
     for (int32_t i = 0; i < samples; i++)
     {
         updateSensorData();
-        x += getRawAcceleroData().x;
-        y += getRawAcceleroData().y;
-        z += getRawAcceleroData().z;
+        x += mAccelero.raw.x;
+        y += mAccelero.raw.y;
+        z += mAccelero.raw.z;
     }
 
     x /= samples;
@@ -172,11 +153,11 @@ bool SensorSystem::calibrate(void)
     z /= samples;
 
     /* X and Y axis should be zero with the sensor flat, and at rest */
-    mCalAccelero.x = -x;
-    mCalAccelero.y = -y;
+    mAccelero.offset.x = -x;
+    mAccelero.offset.y = -y;
 
     /* Y should be equivalent to the full gravity pull */
-    // mCalAccelero.z = z;
+    // mAccelero.offset.z = z;
 
     return true;
 }
