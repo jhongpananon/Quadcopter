@@ -7,7 +7,7 @@
 //----------------------------------------------------------------------------------------------------
 // Definitions
 
-#define Kp 2.0f     // proportional gain governs rate of convergence to accelerometer/magnetometer
+#define Kp 2.5f     // proportional gain governs rate of convergence to accelerometer/magnetometer
 #define Ki 0.005f   // integral gain governs rate of convergence of gyroscope biases
 
 static float q0 = 1.0;

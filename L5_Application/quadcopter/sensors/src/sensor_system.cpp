@@ -5,8 +5,11 @@
  *      Author: pardeep
  */
 #include <stdio.h>
+#include <math.h>
 
 #include "sensor_system.hpp"
+#include "c_tlm_comp.h"
+#include "c_tlm_var.h"
 
 
 
@@ -16,6 +19,27 @@ SensorSystem::SensorSystem() : mI2C(I2C2::getInstance())
     mAccelero = 0;
     mMagno = 0;
     mGyro = 0;
+}
+
+bool SensorSystem::regTlm(void)
+{
+    bool success = true;
+    tlm_component *disk = tlm_component_get_by_name(SYS_CFG_DISK_TLM_NAME);
+
+    if (success) {
+        success = tlm_variable_register(disk, "cal_acc", &(mAccelero.offset), sizeof(mAccelero.offset.x),
+                                        sizeof(mAccelero.offset)/sizeof(mAccelero.offset.x), tlm_int);
+    }
+    if (success) {
+        success = tlm_variable_register(disk, "cal_mag", &(mMagno.offset), sizeof(mMagno.offset.x),
+                                        sizeof(mMagno.offset)/sizeof(mMagno.offset.x), tlm_int);
+    }
+    if (success) {
+        success = tlm_variable_register(disk, "cal_gyro", &(mGyro.offset), sizeof(mGyro.offset.x),
+                                        sizeof(mGyro.offset)/sizeof(mGyro.offset.x), tlm_int);
+    }
+
+    return success;
 }
 
 bool SensorSystem::init(void)
@@ -43,21 +67,27 @@ bool SensorSystem::init(void)
 
 void SensorSystem::updateSensorData(void)
 {
-    const uint8_t readMultiBytes = 0x80; ///< Bit7 must be set to perform address auto-increment on accelero and gyro
+    /**
+     * Bit7 must be set to perform address auto-increment on accelero and gyro
+     * in order to read more than one register at a time.
+     */
+    const uint8_t readMultiBytes = (1 << 7);
+    const uint8_t acceleroReg = (0x28 | readMultiBytes);
+    const uint8_t gyroReg     = (0x28 | readMultiBytes);
+    const uint8_t magnoReg    = 0x03;
 
     /* Read and update accelero data */
-    mI2C.readRegisters(I2CAddr_LSM303_Accel, 0x28 | readMultiBytes, (char*)&mAccelero.raw, sizeof(mAccelero.raw));
+    mI2C.readRegisters(I2CAddr_LSM303_Accel, acceleroReg, (char*)&mAccelero.raw, sizeof(mAccelero.raw));
     convertRawAccelero(mAccelero);
 
     /* Read and update magno data */
-    mI2C.readRegisters(I2CAddr_LSM303_Mag, 0x03, (char*)&mMagno.raw, sizeof(mMagno.raw));
+    mI2C.readRegisters(I2CAddr_LSM303_Mag, magnoReg, (char*)&mMagno.raw, sizeof(mMagno.raw));
     convertRawMagno(mMagno);
 
     /* Read the gyroscope and convert the readings to radians per second that is needed by AHRS algorithm */
-    mI2C.readRegisters(I2CAddr_L3GD20_Gyro, 0x28 | readMultiBytes, (char*)&mGyro.raw, sizeof(mGyro.raw));
+    mI2C.readRegisters(I2CAddr_L3GD20_Gyro, gyroReg, (char*)&mGyro.raw, sizeof(mGyro.raw));
     convertRawGyro(mGyro);
 }
-
 
 void SensorSystem::convertRawAccelero(sensorData_t &data)
 {
@@ -91,8 +121,8 @@ void SensorSystem::convertRawGyro(sensorData_t &data)
     data.converted.z = data.raw.z;
 
     /* Avoid multiplying (degPerBitFor250dps * degPerSecToRadPerSec) since this calculation
-     * is too close to zero value of 32-bit single precision float.
-     * TODO Try dividing by 1000 last to ensure the units don't become zero.
+     * is too close to zero value of 32-bit single precision float.  I tested this on
+     * windows compiler though, and the result doesn't zero out regardless... need to test here.
      */
     data.converted.x *= degPerBitFor250dps;
     data.converted.y *= degPerBitFor250dps;
@@ -128,36 +158,63 @@ void SensorSystem::convertRawMagno(sensorData_t &data)
     data.converted.z /= zAxisLsbPerGauss;
 }
 
-bool SensorSystem::calibrate(void)
+bool SensorSystem::calibrateForZeroOffset(void)
 {
     /* Need a large signed int to add up the sum of all samples */
-    int64_t x = 0, y = 0, z = 0;
+    int64_t ax = 0, ay = 0, az = 0;
+    int64_t gx = 0, gy = 0, gz = 0;
     const int32_t samples = 100;
 
     /* Important to zero out calibration values because updateSensorData() gives us
      * readings after applying the calibration
      */
     mAccelero.offset = 0;
+    mGyro.offset = 0;
 
     /* Find the average zero offset when the sensor is at rest */
     for (int32_t i = 0; i < samples; i++)
     {
         updateSensorData();
-        x += mAccelero.raw.x;
-        y += mAccelero.raw.y;
-        z += mAccelero.raw.z;
+
+        ax += mAccelero.raw.x;
+        ay += mAccelero.raw.y;
+        az += mAccelero.raw.z;
+
+        gx += mGyro.raw.x;
+        gy += mGyro.raw.y;
+        gz += mGyro.raw.z;
     }
 
-    x /= samples;
-    y /= samples;
-    z /= samples;
+    /* Compute the average of accelero and gyro */
+    ax /= samples;
+    ay /= samples;
+    az /= samples;
+    gx /= samples;
+    gy /= samples;
+    gz /= samples;
 
     /* X and Y axis should be zero with the sensor flat, and at rest */
-    mAccelero.offset.x = -x;
-    mAccelero.offset.y = -y;
+    mAccelero.offset.x = -ax;
+    mAccelero.offset.y = -ay;
 
-    /* Y should be equivalent to the full gravity pull */
-    // mAccelero.offset.z = z;
+    /* Y should be equivalent to the full gravity pull (1G)
+     * If z-axis average shows 1060, then :
+     *      maxzValue = 2048
+     *      halfzValue = 1024
+     *      offset = (1060 - 1024) = 36
+     */
+    const int16_t maxzValue = (int16_t) pow(2, ceil(log(az)/log(2)));
+    const int16_t halfzValue = (maxzValue / 2);
+    mAccelero.offset.z = -(az - halfzValue);
+
+    /* All axis of gyro should show zero when the gyro is at rest */
+    mGyro.offset.x = -gx;
+    mGyro.offset.y = -gy;
+    mGyro.offset.z = -gz;
+
+    printf("Avg. accelerometer readings: %d %d %d\n", (int)ax, (int)ay, (int)az);
+    printf("Avg.   gyroscope   readings: %d %d %d\n", (int)gx, (int)gy, (int)gz);
+    puts("Calibration complete!\n");
 
     return true;
 }

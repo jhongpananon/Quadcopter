@@ -38,7 +38,8 @@ enum {
     shared_learnSemaphore, ///< Terminal command gives this semaphore to remoteTask (IR sensor task)
 
     /* Quadcopter shared IDs */
-    shared_RcReceiverQueue,             ///< Queue of RC receiver timings from ISR
+    shared_RcReceiverQueue,         ///< Queue of RC receiver timings from ISR
+    shared_zeroCalibrate,           ///< Signal to zero calibrate the sensors
 };
 
 

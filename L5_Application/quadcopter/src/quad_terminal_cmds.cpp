@@ -6,6 +6,9 @@
 #include "quadcopter.hpp"
 #include "file_logger.h"
 
+#include "scheduler_task.hpp"
+#include "shared_handles.h"
+
 
 
 CMD_HANDLER_FUNC(quadcopterPidChangeHandler)
@@ -81,24 +84,50 @@ CMD_HANDLER_FUNC(quadcopterPidLogHandler)
         Quadcopter::getInstance().enablePidIoLogging(ms);
         output.printf("%s PID logging every %u ms\n", (ms > 0) ? "Enabled" : "Disabled", ms);
     }
-    /* Just to test out the logger */
-    else if (cmdParams.beginsWithIgnoreCase("test"))
-    {
-        int count = 0;
-        cmdParams.scanf("%*s %u", &count);
-        cmdParams.eraseFirstWords(2);
-
-        for (int i = 0; i < count; i++) {
-            if (0 == (i%100)) {
-                output.printf("Logging message #%i\n", i);
-            }
-            LOG_INFO(cmdParams());
-        }
-    }
     else
     {
         handled = false;
     }
 
     return handled;
+}
+
+CMD_HANDLER_FUNC(quadcopterCalibrateHandler)
+{
+    output.printf("MAKE SURE THE QUADCOPTER IS AT FULL REST!");
+
+    vTaskDelayMs(2000);
+    xSemaphoreGive(scheduler_task::getSharedObject(shared_zeroCalibrate));
+
+    return true;
+}
+
+CMD_HANDLER_FUNC(quadcopterCommands)
+{
+    static CommandProcessor *cp = NULL;
+    if (NULL == cp)
+    {
+        cp = new CommandProcessor(4);
+
+        cp->addHandler(quadcopterPidChangeHandler, "pid", "Change or get PID parameters: \n"
+                                                            "'pid get' : Print all PID parameters\n"
+                                                            "'pid pitch 1 0.5 0' : Set PITCH parameters\n"
+                                                            "'pid roll 1 0.5 0' : Set ROLL parameters\n"
+                                                            "'pid yaw 1 0.5 0' : Set YAW parameters\n");
+
+        CMD_HANDLER_FUNC(quadcopterPidLogHandler);
+        cp->addHandler(quadcopterPidLogHandler, "logger", "Enable or disable Quadcopter logging: \n"
+                                                          "Turn ON   : 'logger pid <ms>'\n"
+                                                          "Turn OFF  : 'logger pid 0'\n"
+                                                          "Get status: 'logger status'");
+
+        CMD_HANDLER_FUNC(quadcopterCalibrateHandler);
+        cp->addHandler(quadcopterCalibrateHandler, "calibrate", "Finds zeroes and stores calibrates values");
+    }
+
+    if (cmdParams == "") {
+        cmdParams = "help";
+    }
+
+    cp->handleCommand(cmdParams, output);
 }

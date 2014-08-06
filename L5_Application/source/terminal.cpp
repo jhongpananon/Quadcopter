@@ -125,16 +125,8 @@ bool terminalTask::taskEntry()
     #endif
 
     /* Quadcopter project handlers */
-    CMD_HANDLER_FUNC(quadcopterPidChangeHandler);
-    cp.addHandler(quadcopterPidChangeHandler, "pid", "Change or get PID parameters: \n"
-                                                     "'pid get' : Print all PID parameters\n"
-                                                     "'pid pitch 1 0.5 0' : Set PITCH parameters\n"
-                                                     "'pid roll 1 0.5 0' : Set ROLL parameters\n"
-                                                     "'pid yaw 1 0.5 0' : Set YAW parameters\n");
-
-    CMD_HANDLER_FUNC(quadcopterPidLogHandler);
-    cp.addHandler(quadcopterPidLogHandler, "qlog", "Enable or disable Quadcopter logging: \n"
-                                                   "'qlog pid on' or 'qlog pid off'");
+    CMD_HANDLER_FUNC(quadcopterCommands);
+    cp.addHandler(quadcopterCommands, "quad", "Nested commands, type 'quad' to get help");
 
     // Initialize Interrupt driven version of getchar & putchar
     Uart0& uart0 = Uart0::getInstance();

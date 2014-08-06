@@ -144,6 +144,11 @@ bool quadcopter_task::init(void)
         success = mSensorSystem.init();
     }
 
+    // Add the calibration signal
+    if (success) {
+        success = addSharedObject(shared_zeroCalibrate, xSemaphoreCreateBinary());
+    }
+
     return success;
 }
 
@@ -162,6 +167,11 @@ bool quadcopter_task::regTlm(void)
     if (success) {
         tlm_component *disk = tlm_component_get_by_name(SYS_CFG_DISK_TLM_NAME);
         success = TLM_REG_VAR(disk, mLowBatteryTriggerPercent, tlm_uint);
+    }
+
+    /* Register calibration data of the sensor system */
+    if (success) {
+        success = mSensorSystem.regTlm();
     }
 
     /* Register any debug counters */
@@ -199,6 +209,13 @@ bool quadcopter_task::run(void *p)
 {
     const uint32_t loopStart = sys_get_uptime_us();
     const uint32_t millis = sys_get_uptime_ms();
+
+    if (xSemaphoreTake(getSharedObject(shared_zeroCalibrate), 0))
+    {
+        mSensorSystem.calibrateForZeroOffset();
+        mLastCallMs = 0; /* Re-init timing skew */
+        return true;
+    }
 
     /* Detect any "call rate" skew in case we are not getting called at precise timings */
     detectTimingSkew(millis);
@@ -242,8 +259,8 @@ bool quadcopter_task::run(void *p)
 
         if (mPrintYpr) {
             mPrintYpr--;
-            Quadcopter::flightPRY_t ypr = mQuadcopter.getCurrentFlightAngles();
-            printf("Yaw=[%4d], Pitch=[%4d], Roll=[%4d]\n", ypr.yaw, ypr.pitch, ypr.roll);
+            Quadcopter::flightYPR_t ypr = mQuadcopter.getCurrentFlightAngles();
+            printf("Yaw=[%4.1f], Pitch=[%4.1f], Roll=[%4.1f]\n", ypr.yaw, ypr.pitch, ypr.roll);
         }
 
         SensorSystem::rawSensorVector_t data;

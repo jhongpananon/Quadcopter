@@ -60,6 +60,9 @@ class SensorSystem : public iMagnoIface, public iAcceleroIface, public iGyroIfac
         /// Initializes the sensors and returns true if successful
         bool init(void);
 
+        /// Registers telemetry
+        bool regTlm(void);
+
         /// @returns interface method that returns the accelerometer readings
         threeAxisVector_t getAcceleroData(void) const       { return mAccelero.converted;   }
 
@@ -78,6 +81,16 @@ class SensorSystem : public iMagnoIface, public iAcceleroIface, public iGyroIfac
         /// Updates all the sensor data to be later retrieved by the interface methods
         void updateSensorData(void);
 
+        /**
+         * Calibrates the accelerometer and gyroscope sensors when the sensors are sitting flat.
+         * This computes the offsets that are needed to force the sensors reading to zero when
+         * the sensors are at full rest.  In this case, the acclerometer X/Y and gyro X/Y/Z should
+         * be zero values while the accelerometer Z axis should indicate full 1G gravity value.
+         *
+         * @pre The sensors MUST BE at rest on a flat surface with z-axis pointing down without an angle!
+         */
+        bool calibrateForZeroOffset(void);
+
     private:
         /// Structure that contains RAW data type, offset data type, and the converted data type
         typedef struct {
@@ -88,9 +101,6 @@ class SensorSystem : public iMagnoIface, public iAcceleroIface, public iGyroIfac
             /// Equal operator to set all values to zero
             void operator = (int num) { raw = 0; offset = 0; converted = 0; }
         } sensorData_t;
-
-        /// Calibrates the sensors upon startup (requires still quadcopter)
-        bool calibrate(void);
 
         /** @{ Raw to meaningful sensor unit conversion functions */
         void convertRawAccelero(sensorData_t &data);

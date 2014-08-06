@@ -68,7 +68,9 @@ class quadcopter_task : public scheduler_task
         /// Frequency at which propellers (ESCs) will be updated
         const uint32_t mEscUpdateFrequencyMs;
 
-        uint32_t mPrintYpr, mPrintAcc, mPrintGyro, mPrintMagno;
+        /** @{ Counters to print number of sample outputs, these can be modified through telemetry */
+        uint16_t mPrintYpr, mPrintAcc, mPrintGyro, mPrintMagno;
+        /** @} */
 };
 
 

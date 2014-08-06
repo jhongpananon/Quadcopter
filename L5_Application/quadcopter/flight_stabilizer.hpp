@@ -23,16 +23,16 @@ class FlightStabilizer : public MotorControllerIface
     public:
         /// Structure of pitch, roll, and yaw
         typedef struct {
-            int16_t pitch;   ///< Pitch angle
-            int16_t roll;    ///< Roll angle
-            int16_t yaw;     ///< Yaw angle
+            float pitch;   ///< Pitch angle
+            float roll;    ///< Roll angle
+            float yaw;     ///< Yaw angle
 
             void operator=(int num) { pitch = roll = yaw = num; }
-        } flightPRY_t;
+        } flightYPR_t;
 
         /// Common structure used for pitch, roll, yaw, and throttle values
         typedef struct {
-            flightPRY_t angle;  /// Pitch, roll, and yaw angles
+            flightYPR_t angle;  /// Pitch, roll, and yaw angles
             uint8_t throttle;   ///< Throttle value
 
             void operator=(int num) { angle = num; throttle = num; }
@@ -63,7 +63,7 @@ class FlightStabilizer : public MotorControllerIface
         inline bool getArmed(void) const { return mArmed;  }
 
         /// @returns The current flight angles computed by the sensors
-        inline flightPRY_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
+        inline flightYPR_t getCurrentFlightAngles(void) const { return mCurrentAngles; }
 
         /**
          * Enables or Disables PID value logging
@@ -117,7 +117,7 @@ class FlightStabilizer : public MotorControllerIface
 
     private:
         flightParams_t mFlightControllerAngles;  ///< Input flight parameters
-        flightPRY_t mCurrentAngles;              ///< The current flight angles
+        flightYPR_t mCurrentAngles;              ///< The current flight angles
 
         PID mPitchPid;  ///< PID for pitch control
         PID mRollPid;   ///< PID for roll
