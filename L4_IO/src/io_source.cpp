@@ -149,7 +149,7 @@ int16_t Acceleration_Sensor::getZ()
  */
 
 /**
- * TODO : Move this functionality that lpc_sys.c's timer1 ISR can call.
+ * TO DO : Move this functionality that lpc_sys.c's timer1 ISR can call.
  */
 #if 0
 extern "C"
@@ -245,12 +245,11 @@ bool IR_Sensor::init()
 
 bool IR_Sensor::isIRCodeReceived()
 {
-    return false; // todo
+    return false;
 }
 unsigned int IR_Sensor::getLastIRCode()
 {
     unsigned int signal = 0;
-    // todo
     return signal;
 }
 

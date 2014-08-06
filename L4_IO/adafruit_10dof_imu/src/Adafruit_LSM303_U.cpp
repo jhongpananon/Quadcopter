@@ -298,7 +298,7 @@ void Adafruit_LSM303_Mag_Unified::read()
   _magData.y = (int16_t)(ylo | ((int16_t)yhi << 8));
   _magData.z = (int16_t)(zlo | ((int16_t)zhi << 8));
   
-  // ToDo: Calculate orientation
+  // To Do: Calculate orientation
   _magData.orientation = 0.0;
 }
 

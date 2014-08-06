@@ -103,7 +103,7 @@ void lpc_sys_setup_system_timer(void)
     // NVIC_SetPriority(timer_irq, IP_above_freertos);
 
     // Enable the interrupts
-    // TODO Setup capture interrupt for IR receiver
+    // TO DO Setup capture interrupt for IR receiver
 #if (1 == SYS_CFG_SYS_TIMER)
     gp_timer_ptr->MCR = (mr0_intr | mr1_intr | mr2_intr);
 #else
@@ -165,7 +165,7 @@ void TIMERX_BAD_IRQHandler()
     const uint32_t intr_reason = gp_timer_ptr->IR;
 
 #if (1 == SYS_CFG_SYS_TIMER)
-    /* TODO: Call capture ISR callback for IR receiver */
+    /* TO DO: Call capture ISR callback for IR receiver */
     if (intr_reason & timer_capt0_intr)
     {
         gp_timer_ptr->IR = timer_capt0_intr;
@@ -173,7 +173,7 @@ void TIMERX_BAD_IRQHandler()
         // Setup timeout of IR signal (unless we reset it again)
         gp_timer_ptr->MR2 = 10000 + gp_timer_ptr->TC;
     }
-    /* TODO MR2: End of IR capture (no IR capture after initial IR signal) */
+    /* TO DO MR2: End of IR capture (no IR capture after initial IR signal) */
     else if (intr_reason & timer_mr2_intr)
     {
         gp_timer_ptr->IR = timer_mr2_intr;

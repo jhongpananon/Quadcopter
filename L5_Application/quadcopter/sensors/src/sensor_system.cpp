@@ -4,10 +4,12 @@
  *  Created on: Jul 13, 2014
  *      Author: pardeep
  */
+
 #include <stdio.h>
 #include <math.h>
 
 #include "sensor_system.hpp"
+#include "utilities.h"
 #include "c_tlm_comp.h"
 #include "c_tlm_var.h"
 
@@ -91,12 +93,20 @@ void SensorSystem::updateSensorData(void)
 
 void SensorSystem::convertRawAccelero(sensorData_t &data)
 {
+#if 0
     /* Adafruit is doing this, and I've noticed that the smallest change is 32 at +/- 2G
      * It looks like actual data resolution is 12-bit, not 16-bit as stated in the datasheet.
      */
     data.raw.x >>= 4;
     data.raw.y >>= 4;
     data.raw.z >>= 4;
+#else
+    /* Actual data only increments by 16 */
+    const int divider = 16;
+    data.raw.x /= divider;
+    data.raw.y /= divider;
+    data.raw.z /= divider;
+#endif
 
     /* Apply calibration values */
     data.raw += data.offset;
@@ -153,9 +163,12 @@ void SensorSystem::convertRawMagno(sensorData_t &data)
     data.converted.z = data.raw.z;
 
     /* Convert to the gauss units to normalize the data of this vector */
+    /* TODO: Test to make sure that the raw readings are accurate, and byte order is correct */
+#if 0
     data.converted.x /= xyAxisLsbPerGauss;
     data.converted.y /= xyAxisLsbPerGauss;
     data.converted.z /= zAxisLsbPerGauss;
+#endif
 }
 
 bool SensorSystem::calibrateForZeroOffset(void)
@@ -174,7 +187,9 @@ bool SensorSystem::calibrateForZeroOffset(void)
     /* Find the average zero offset when the sensor is at rest */
     for (int32_t i = 0; i < samples; i++)
     {
+        /* Update sensor data at about 100Hz */
         updateSensorData();
+        delay_ms(10);
 
         ax += mAccelero.raw.x;
         ay += mAccelero.raw.y;
@@ -199,11 +214,11 @@ bool SensorSystem::calibrateForZeroOffset(void)
 
     /* Y should be equivalent to the full gravity pull (1G)
      * If z-axis average shows 1060, then :
-     *      maxzValue = 2048
+     *      maxzValue = 2048   from pow(2, 11) since we add az/8 to intentionally go above
      *      halfzValue = 1024
      *      offset = (1060 - 1024) = 36
      */
-    const int16_t maxzValue = (int16_t) pow(2, ceil(log(az)/log(2)));
+    const int16_t maxzValue = (int16_t) pow(2, ceil(log(az + az/8)/log(2)));
     const int16_t halfzValue = (maxzValue / 2);
     mAccelero.offset.z = -(az - halfzValue);
 
@@ -213,7 +228,7 @@ bool SensorSystem::calibrateForZeroOffset(void)
     mGyro.offset.z = -gz;
 
     printf("Avg. accelerometer readings: %d %d %d\n", (int)ax, (int)ay, (int)az);
-    printf("Avg.   gyroscope   readings: %d %d %d\n", (int)gx, (int)gy, (int)gz);
+    printf("Avgerage gyroscope readings: %d %d %d\n", (int)gx, (int)gy, (int)gz);
     puts("Calibration complete!\n");
 
     return true;
