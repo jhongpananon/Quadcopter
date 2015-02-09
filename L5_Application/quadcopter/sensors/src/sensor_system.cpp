@@ -79,15 +79,15 @@ void SensorSystem::updateSensorData(void)
     const uint8_t magnoReg    = 0x03;
 
     /* Read and update accelero data */
-    mI2C.readRegisters(I2CAddr_LSM303_Accel, acceleroReg, (char*)&mAccelero.raw, sizeof(mAccelero.raw));
+    mI2C.readRegisters(I2CAddr_LSM303_Accel, acceleroReg, (uint8_t*)&mAccelero.raw, sizeof(mAccelero.raw));
     convertRawAccelero(mAccelero);
 
     /* Read and update magno data */
-    mI2C.readRegisters(I2CAddr_LSM303_Mag, magnoReg, (char*)&mMagno.raw, sizeof(mMagno.raw));
+    mI2C.readRegisters(I2CAddr_LSM303_Mag, magnoReg, (uint8_t*)&mMagno.raw, sizeof(mMagno.raw));
     convertRawMagno(mMagno);
 
     /* Read the gyroscope and convert the readings to radians per second that is needed by AHRS algorithm */
-    mI2C.readRegisters(I2CAddr_L3GD20_Gyro, gyroReg, (char*)&mGyro.raw, sizeof(mGyro.raw));
+    mI2C.readRegisters(I2CAddr_L3GD20_Gyro, gyroReg, (uint8_t*)&mGyro.raw, sizeof(mGyro.raw));
     convertRawGyro(mGyro);
 }
 

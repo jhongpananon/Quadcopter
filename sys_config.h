@@ -33,7 +33,7 @@ extern "C" {
  * @warning
  *      The AIR data rate, and channel number must be consistent for your wireless
  *      nodes to talk to each other.  It seems that 2000kbps works better than 250kbps
- *      although slower data rate is supposed to get longer higher range.
+ *      although slower data rate is supposed to get longer range.
  *
  * @warning Go to   "PROJECT" --> "Clean"   if you change the settings here.
  */
@@ -55,7 +55,7 @@ extern "C" {
 
 #define SYS_CFG_SPI1_CLK_MHZ            24          ///< Max speed of SPI1 for SD Card and Flash memory
 #define SYS_CFG_SPI0_CLK_MHZ            8           ///< Nordic wireless requires 1-8Mhz max
-#define SYS_CFG_I2C2_CLK_KHZ            400         ///< 100Khz is standard I2C speed
+#define SYS_CFG_I2C2_CLK_KHZ            100         ///< 100Khz is standard I2C speed
 
 /// If defined, a boot message is logged to this file
 //#define SYS_CFG_LOG_BOOT_INFO_FILENAME        "boot.csv"
@@ -63,11 +63,11 @@ extern "C" {
 #define SYS_CFG_STARTUP_DELAY_MS        2000        ///< Start-up delay in milliseconds
 #define SYS_CFG_CRASH_STARTUP_DELAY_MS  5000        ///< Start-up delay in milliseconds if a crash occurred previously.
 #define SYS_CFG_INITIALIZE_LOGGER       0           ///< If non-zero, the logger is initialized (@see file_logger.h)
-#define SYS_CFG_LOGGER_TASK_PRIORITY    0           ///< The priority of the logger task
-#define SYS_CFG_ENABLE_TLM              1           ///< Enable telemetry system. C_FILE_IO forced enabled if enabled
+#define SYS_CFG_LOGGER_TASK_PRIORITY    1           ///< The priority of the logger task (do not use 0, logger will run into issues while writing the file)
+#define SYS_CFG_ENABLE_TLM              0           ///< Enable telemetry system. C_FILE_IO forced enabled if enabled
 #define SYS_CFG_DISK_TLM_NAME           "disk"      ///< Filename to save "disk" telemetry variables
 #define SYS_CFG_DEBUG_TLM_NAME          "debug"     ///< Name of the debug telemetry component
-#define SYS_CFG_ENABLE_CFILE_IO         1           ///< Allow stdio fopen() fclose() to redirect to ff.h
+#define SYS_CFG_ENABLE_CFILE_IO         0           ///< Allow stdio fopen() fclose() to redirect to ff.h
 #define SYS_CFG_MAX_FILES_OPENED        3           ///< Maximum files that can be opened at once
 
 
@@ -76,8 +76,10 @@ extern "C" {
  * Define the timer that will be used to run the background timer service. This drives the
  * lpc_sys_get_uptime_ms(), lpc_sys_get_uptime_us() and periodically resets the watchdog timer
  * along with running the mesh networking task if FreeRTOS is running.
+ *
+ * Timer 1 is required if you wish to have an operational IR remote control decoding.
  */
-#define SYS_CFG_SYS_TIMER               3
+#define SYS_CFG_SYS_TIMER               1
 
 /**
  * Watchdog timeout in milliseconds

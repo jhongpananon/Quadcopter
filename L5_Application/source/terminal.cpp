@@ -88,9 +88,9 @@ bool terminalTask::taskEntry()
     cp.addHandler(rmHandler,     "rm",    "Remove a file. Ex: 'rm 0:file.txt'");
 
     // Misc. handlers
-    cp.addHandler(i2cIoHandler,   "i2c",   "'i2c read 0x01 0x02 <count>' : Reads  device 0x01, and register 0x02\n"
-                                           "'i2c write 0x01 0x02 0x03'   : Writes device 0x01, reg 0x02, data 0x03\n"
-                                           "'i2c discover' : Discover I2C devices");
+    cp.addHandler(i2cIoHandler,   "i2c",   "'i2c read 0x01 0x02 <count>' : Reads <count> registers of device 0x01 starting from 0x02\n"
+                                           "'i2c write 0x01 0x02 0x03'   : Writes 0x03 to device 0x01, reg 0x02\n"
+                                           "'i2c discover' : Discovers all I2C devices on the BUS");
 #if TERMINAL_USE_CAN_BUS_HANDLER
     CMD_HANDLER_FUNC(canBusHandler);
     cp.addHandler(canBusHandler,  "canbus", "'canbus init' : initialize CAN-1\n"
@@ -102,7 +102,12 @@ bool terminalTask::taskEntry()
 
     cp.addHandler(storageHandler,  "storage",  "Parameters: 'format sd', 'format flash', 'mount sd', 'mount flash'");
     cp.addHandler(rebootHandler,   "reboot",   "Reboots the system");
-    cp.addHandler(logHandler,      "log",      "'log <hello>' to log info.  'log flush' to flush logs");
+    cp.addHandler(logHandler,      "log",      "'log <hello>': log an info message\n"
+                                               "'log flush'  : flush the logs\n"
+                                               "'log status' : get status of the logger\n"
+                                               "'log enable print debug/info/warn/error' : Enables logger calls to printf\n"
+                                               "'log disable print debug/info/warn/error': Disables logger calls to printf\n"
+                                               );
     cp.addHandler(learnIrHandler,  "learn",    "Begin to learn IR codes for numbers 0-9");
     cp.addHandler(wirelessHandler, "wireless", "Use 'wireless' to see the nested commands");
 
@@ -304,10 +309,7 @@ terminalTask::cmdChan_t terminalTask::getCommand(void)
 
         for (idx = 0; idx < mCmdIface.size(); idx++)
         {
-            /* Use block time only on the last interface */
-            TickType_t timeout = (idx == mCmdIface.size() - 1) ? 2 : 0;
-
-            if (mCmdIface[idx].iodev->isReady() && mCmdIface[idx].iodev->getChar(&c, timeout))
+            if (mCmdIface[idx].iodev->isReady() && mCmdIface[idx].iodev->getChar(&c, 0))
             {
                 ret = mCmdIface[idx];
                 handleEchoAndBackspace(&ret, c);
@@ -322,7 +324,7 @@ terminalTask::cmdChan_t terminalTask::getCommand(void)
          * so we don't want to hog the CPU, so just delay here by one tick
          */
         if (!gotChar && xTaskGetTickCount() == ticksBefore) {
-            vTaskDelay(1);
+            vTaskDelay(2);
         }
 
         /* Guard against command length too large */

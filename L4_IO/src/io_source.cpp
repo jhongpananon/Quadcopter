@@ -16,6 +16,8 @@
  *          p r e e t . w i k i @ g m a i l . c o m
  */
 
+#include <stdint.h>
+
 #include "io.hpp" // All IO Class definitions
 #include "bio.h"
 #include "adc0.h"
@@ -148,85 +150,51 @@ int16_t Acceleration_Sensor::getZ()
  *  the decoded signal will be unique per button pressed on an IR remote.
  */
 
-/**
- * TO DO : Move this functionality that lpc_sys.c's timer1 ISR can call.
- */
-#if 0
-extern "C"
+
+#define MAX_FALLING_EDGES_PER_IR_FRAME      32
+static uint32_t g_ir_timings[MAX_FALLING_EDGES_PER_IR_FRAME] = { 0 };   ///< IR signal falling edges
+static uint16_t g_signal_count = 0;         ///< The number of falling edges
+static uint32_t g_last_decoded_signal = 0;  ///< Value of the last decoded signals
+
+void IR_Sensor::storeIrCode(uint32_t value)
 {
-    void TIMER1_IRQHandler()
-    {
-        const unsigned int captureMask = (1 << 4);
-        const unsigned int MR0Mask     = (1 << 0);
-        const unsigned int ticksFor20Ms = (20 * 1000) / TIMER1_US_PER_TICK;
-
-        const  unsigned short maxFallingEdgesPerIRFrame = 32;
-        static unsigned short signalCount = 0;
-        static unsigned int signalArray[maxFallingEdgesPerIRFrame] = {0};
-
-        // Capture interrupt occurred:
-        if(LPC_TIM1->IR & captureMask)
-        {
-            /**
-             * Reload Match Register Interrupt to interrupt 20ms after this point of time
-             * If another capture interrupt arrives later, this timer is reset again.
-             */
-            LPC_TIM1->MR0 = (LPC_TIM1->TC + ticksFor20Ms);
-
-            // Just store the timestamp of this signal
-            if(signalCount < maxFallingEdgesPerIRFrame) {
-                signalArray[signalCount++] = LPC_TIM1->CR0;
-            }
-
-            // Clear the Timer Capture interrupt
-            LPC_TIM1->IR = captureMask;
-        }
-        // Timeout Interrupt to decode the signal
-        else if(LPC_TIM1->IR & MR0Mask)
-        {
-            if(signalCount > 1)
-            {
-                /**
-                 * Time to decode the signals at this timeout
-                 * Calculate differences of falling edges
-                 */
-                for(int i = 0; i < signalCount-1; i++) {
-                    signalArray[i] = signalArray[i+1] - signalArray[i];
-                }
-
-                /**
-                 * First falling edge value should indicate binary 0.
-                 * So anything higher than 50% of this value is considered binary 1.
-                 */
-                const unsigned int binary1Threshold = signalArray[1] + (signalArray[1]/2);
-                unsigned int decodedSignal = 0;
-                for(unsigned short i=0; i < signalCount-1; i++) {
-                    if(signalArray[i] > binary1Threshold) {
-                        //printf("%i, ", signalArray[i]);
-                        decodedSignal |= (1 << i);
-                    }
-                }
-                LAST_DECODED_IR_SIGNAL = decodedSignal;
-            }
-
-            // Clear the Match Interrupt and signal count
-            signalCount = 0;
-            LPC_TIM1->IR = MR0Mask;
-        }
-        else
-        {
-            // Log error of unexpected interrupt
-        }
+    // Just store the timestamp of this signal
+    if(g_signal_count < MAX_FALLING_EDGES_PER_IR_FRAME) {
+        g_ir_timings[g_signal_count++] = value;
     }
 }
-#endif
+
+void IR_Sensor::decodeIrCode(void)
+{
+    if(g_signal_count > 1)
+    {
+        /* Calculate differences of falling edges */
+        for(int i = 0; i < g_signal_count-1; i++) {
+            g_ir_timings[i] = g_ir_timings[i+1] - g_ir_timings[i];
+        }
+
+        /**
+         * First falling edge value should indicate binary 0.
+         * So anything higher than 50% of this value is considered binary 1.
+         */
+        const uint32_t binary1Threshold = g_ir_timings[1] + (g_ir_timings[1]/2);
+        uint32_t decodedSignal = 0;
+        for(uint16_t i=0; i < g_signal_count-1; i++) {
+            if(g_ir_timings[i] > binary1Threshold) {
+                decodedSignal |= (1 << i);
+            }
+        }
+        g_last_decoded_signal = decodedSignal;
+    }
+
+    g_signal_count = 0;
+}
 
 /**
  * IR Sensor is attached to P1.18 - CAP1.0, so it needs TIMER1 to capture the times on P1.18
  */
 bool IR_Sensor::init()
 {
-#if 0
     /* Power up the timer 1 in case it is off */
     lpc_pconp(pconp_timer1, true);
 
@@ -238,18 +206,18 @@ bool IR_Sensor::init()
 
     // Select P1.18 as CAP1.0 by setting bits 5:4 to 0b11
     LPC_PINCON->PINSEL3 |= (3 << 4);
-#endif
 
     return true;
 }
 
 bool IR_Sensor::isIRCodeReceived()
 {
-    return false;
+    return (0 != g_last_decoded_signal);
 }
-unsigned int IR_Sensor::getLastIRCode()
+uint32_t IR_Sensor::getLastIRCode()
 {
-    unsigned int signal = 0;
+    const uint32_t signal = g_last_decoded_signal;
+    g_last_decoded_signal = 0;
     return signal;
 }
 
@@ -304,31 +272,49 @@ bool LED::init()
     /* Pins initialized by bio.h */
     return true;
 }
-void LED::on(int ledNum)
+void LED::on(uint8_t ledNum)
 {
-    mLedValue |= (1 << (ledNum-1));
+    portENTER_CRITICAL();
+    mLedValue or_eq (1 << (ledNum-1));
     setAll(mLedValue);
+    portEXIT_CRITICAL();
 }
-void LED::off(int ledNum)
+void LED::off(uint8_t ledNum)
 {
-    mLedValue &= ~(1 << (ledNum-1));
+    portENTER_CRITICAL();
+    mLedValue and_eq ~(1 << (ledNum-1));
     setAll(mLedValue);
+    portEXIT_CRITICAL();
 }
-void LED::set(int ledNum, bool o)
+void LED::toggle(uint8_t ledNum)
 {
-    if (o) on(ledNum);
-    else   off(ledNum);
+    portENTER_CRITICAL();
+    mLedValue xor_eq (1 << (ledNum-1));
+    setAll(mLedValue);
+    portEXIT_CRITICAL();
 }
-void LED::setAll(char value)
+void LED::set(uint8_t ledNum, bool ON)
 {
-    mLedValue = value & 0x0F;
-    LPC_GPIO1->FIOSET = BIO_LED_PORT1_MASK;
+    ON ? on(ledNum) : off(ledNum);
+}
+void LED::setAll(uint8_t value)
+{
+    portENTER_CRITICAL();
+    {
+        /* LEDs are active low */
+        #define led_set(num, realbit)               \
+            if (mLedValue & (1 << num))             \
+                LPC_GPIO1->FIOCLR = (1 << realbit); \
+            else                                    \
+                LPC_GPIO1->FIOSET = (1 << realbit)
 
-    /* LEDs are active low */
-    if(mLedValue & (1 << 0)) LPC_GPIO1->FIOCLR = (1 << 0);
-    if(mLedValue & (1 << 1)) LPC_GPIO1->FIOCLR = (1 << 1);
-    if(mLedValue & (1 << 2)) LPC_GPIO1->FIOCLR = (1 << 4);
-    if(mLedValue & (1 << 3)) LPC_GPIO1->FIOCLR = (1 << 8);
+        mLedValue = value & 0x0F;
+        led_set(0, 0);
+        led_set(1, 1);
+        led_set(2, 4);
+        led_set(3, 8);
+    }
+    portEXIT_CRITICAL();
 }
 uint8_t LED::getValues(void) const
 {

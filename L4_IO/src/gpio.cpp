@@ -33,6 +33,13 @@ GPIO::GPIO(LPC1758_GPIO_Type gpioId) :
     *pinsel &= ~(3 << (2*mPinNum));
 }
 
+GPIO::~GPIO()
+{
+    setAsInput();
+    enableOpenDrainMode(false);
+    enablePullUp();
+}
+
 /** @{ Simple functions*/
 void GPIO::setAsInput(void)   {   mpOurGpio->FIODIR &= ~(1 << mPinNum);          }
 void GPIO::setAsOutput(void)  {   mpOurGpio->FIODIR |= (1 << mPinNum);           }
@@ -40,6 +47,7 @@ bool GPIO::read(void) const   {   return !!(mpOurGpio->FIOPIN & (1 << mPinNum));
 void GPIO::setHigh(void)      {   mpOurGpio->FIOSET = (1 << mPinNum);            }
 void GPIO::setLow(void)       {   mpOurGpio->FIOCLR = (1 << mPinNum);            }
 void GPIO::set(bool on)       {   (on) ? setHigh() : setLow();                   }
+void GPIO::toggle(void)       {   this->read() ? setLow() : setHigh();           }
 /** @} */
 
 void GPIO::enablePullUp()

@@ -107,7 +107,7 @@ void high_level_init(void)
      *
      * The slightly tricky part is that the mesh networking task will start to be serviced every
      * one millisecond, so initialize this and immediately initialize the wireless (mesh/nordic)
-     * so by the time 1ms elapses, the pointers are initalized (and not NULL).
+     * so by the time 1ms elapses, the pointers are initialized (and not NULL).
      */
     lpc_sys_setup_system_timer();
 
@@ -124,7 +124,7 @@ void high_level_init(void)
     /* Add default telemetry components if telemetry is enabled */
     #if SYS_CFG_ENABLE_TLM
         tlm_component_add(SYS_CFG_DISK_TLM_NAME);
-        tlm_component_add(SYS_CFG_DEBUG_TLM_NAME);
+        tlm_component_add(SYS_CFG_DEBUG_DLM_NAME);
     #endif
 
     /**
@@ -162,16 +162,6 @@ void high_level_init(void)
     ssp1_set_max_clock(SYS_CFG_SPI1_CLK_MHZ);
     hl_print_line();
 
-    /* File I/O is up, so log the boot message if chosen by the user */
-    #ifdef SYS_CFG_LOG_BOOT_INFO_FILENAME
-    log_boot_info(__DATE__);
-    #endif
-
-    /* File I/O is up, so initialize the logger if user chose the option */
-    #if SYS_CFG_INITIALIZE_LOGGER
-    logger_init(SYS_CFG_LOGGER_TASK_PRIORITY);
-    #endif
-
     /* Initialize all sensors of this board and display "--" on the LED display if an error has occurred. */
     if(!hl_init_board_io()) {
         hl_print_line();
@@ -201,6 +191,16 @@ void high_level_init(void)
     hl_handle_board_id();
     hl_show_prog_info();
     hl_print_line();
+
+    /* File I/O is up, so log the boot message if chosen by the user */
+    #ifdef SYS_CFG_LOG_BOOT_INFO_FILENAME
+    log_boot_info(__DATE__);
+    #endif
+
+    /* File I/O is up, so initialize the logger if user chose the option */
+    #if SYS_CFG_INITIALIZE_LOGGER
+    logger_init(SYS_CFG_LOGGER_TASK_PRIORITY);
+    #endif
 
     /* and finally ... call the user's main() method */
     puts("Calling your main()");

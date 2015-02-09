@@ -96,6 +96,8 @@ class GPIO
 {
     public:
         GPIO(LPC1758_GPIO_Type gpioId); ///< Constructor to choose the pin
+        ~GPIO(); ///< Destructor that will destroy the pin configuration
+
         void setAsInput(void);   ///< Sets pin as input pin
         void setAsOutput(void);  ///< Sets pin as output pin
 
@@ -103,15 +105,17 @@ class GPIO
         void setHigh(void);      ///< Sets the pin to logical HIGH (3.3v)
         void setLow(void);       ///< Sets the pin to logical LOW (0.0v)
         void set(bool on);       ///< Set high/low based on boolean value
+        void toggle(void);       ///< Toggles the state of the GPIO
 
         void enablePullUp();            ///< Enables pull-up resistor
         void enablePullDown();          ///< Enables pull-down resistor
         void disablePullUpPullDown();   ///< Disables pull-up/down resistor
-        void enableOpenDrainMode(bool openDrain); ///< Enables open drain mode
+        void enableOpenDrainMode(bool openDrain=true); ///< Enables open drain mode
 
     protected:
     private:
         GPIO(); ///< Do not use this constructor
+
         const uint8_t mPortNum;                 ///< This GPIOs port number
         const uint8_t mPinNum;                  ///< This GPIOs pin number
         volatile LPC_GPIO_TypeDef *mpOurGpio;   ///< This GPIO's pointer

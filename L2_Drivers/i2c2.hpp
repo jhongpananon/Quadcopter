@@ -48,7 +48,6 @@ class I2C2 : public I2C_Base, public SingletonTemplate<I2C2>
         friend class SingletonTemplate<I2C2>;  ///< Friend class used for Singleton Template
 };
 
-
 /**
  * I2C Addresses for on-board devices attached to I2C Bus
  */

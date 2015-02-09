@@ -54,6 +54,9 @@ class PWM
          */
         PWM(pwmType pwm, unsigned int frequencyHz=50);
 
+        /// Destructor that will destroy PWM configuration
+        ~PWM();
+
         /**
          * Sets the PWM based on the percentage.
          * If 50Hz Servo PWM was setup, then you can use the following :

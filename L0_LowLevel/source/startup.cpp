@@ -38,7 +38,7 @@ extern void __libc_init_array(void);
 #endif
 
 /// CPU execution begins from this function
-static void isr_reset(void);
+void isr_reset(void);
 
 /// The common ISR handler for the chip level interrupts that forwards to the user interrupts
 static void isr_forwarder_routine(void);
@@ -218,15 +218,14 @@ extern unsigned int __data_section_table_end;
 //extern unsigned int __bss_section_table;
 extern unsigned int __bss_section_table_end;
 
-
-
 //*****************************************************************************
 // Code Entry Point : The CPU RESET Handler
 // This sets up the system and copies global memory contensts from FLASH to RAM
 // and initializes C/C++ environment
 //*****************************************************************************
-__attribute__ ((section(".after_vectors")))
-static void isr_reset(void)
+extern "C" {
+__attribute__ ((section(".after_vectors"), naked))
+void isr_reset(void)
 {
     // remove compiler warning
     (void)g_pfnVectors;
@@ -273,9 +272,11 @@ static void isr_reset(void)
         __libc_init_array();    // Call C++ library initialization
     #endif
 
-    low_level_init();   // Initialize minimal system, such as Clock & UART
-    high_level_init();  // Initialize high level board specific features
-    main();             // Finally call main()
+    do {
+        low_level_init();   // Initialize minimal system, such as Clock & UART
+        high_level_init();  // Initialize high level board specific features
+        main();             // Finally call main()
+    } while(0);
 
     // In case main() exits:
     uart0_init(SYS_CFG_UART0_BPS);
@@ -283,6 +284,7 @@ static void isr_reset(void)
     while (1) {
         ;
     }
+}
 }
 
 /**
@@ -366,7 +368,7 @@ static void isr_forwarder_routine(void)
      */
     if (isr_default_handler == isr_to_service)
     {
-        u0_dbg_printf("IRQ #%u was triggered, but no IRQ service was defined!\n", isr_num);
+        u0_dbg_printf("%u IRQ was triggered, but no IRQ service was defined!\n", isr_num);
         while(1);
     }
     else

@@ -40,12 +40,17 @@ static FIL *gp_file_ptr = NULL;                     ///< The pointer to the file
 
 static uint16_t g_blocked_calls = 0;                ///< Number of logging calls that blocked
 static uint16_t g_buffer_watermark = 0;             ///< The watermark of the number of buffers consumed
-static int g_highest_file_write_time = 0;           ///< Highest time spend while trying to write file buffer
+static uint16_t g_highest_file_write_time = 0;      ///< Highest time spend while trying to write file buffer
 static char * gp_file_buffer = NULL;                ///< Pointer to local buffer space before it is written to file
 static QueueHandle_t g_write_buffer_queue = NULL;   ///< Log message pointers are written to this queue
 static QueueHandle_t g_empty_buffer_queue = NULL;   ///< Log message pointers are available from this queue
+static uint32_t g_logger_calls[log_last] = { 0 };   ///< Number of logged messages of each severity
 
-
+/**
+ * Chooses severity levels that are printed on stdio and logged
+ * By default, the debug log will be printed to stdio
+ */
+static uint8_t g_logger_printf_mask = (1 << log_debug);
 
 /**
  * Writes the buffer to the file.
@@ -100,7 +105,11 @@ static bool logger_write_to_file(const void * buffer, const uint32_t bytes_to_wr
     /* We don't want to silently fail, so print a message in case an error occurs */
     if (!success) {
         printf("Error %u writing logfile. %u/%u written. Fptr: %u\n",
+#if (FILE_LOGGER_KEEP_FILE_OPEN)
+                (unsigned)err, (unsigned)bytes_written, (unsigned)bytes_to_write, (unsigned) gp_file_ptr->fptr);
+#else
                 (unsigned)err, (unsigned)bytes_written, (unsigned)bytes_to_write, (unsigned) fatfs_file.fptr);
+#endif
     }
 
     return success;
@@ -116,7 +125,7 @@ static char * logger_get_buffer_ptr(const bool os_running)
 {
     char * buffer = NULL;
 
-    /* Get an available buffer to write the data to, and if OS is not running, just use our first buffer */
+    /* Get an available buffer to write the data to, and if OS is not running, we will always get a buffer */
     if (!os_running) {
         xQueueReceive(g_empty_buffer_queue, &buffer, 0);
     }
@@ -180,7 +189,7 @@ static void logger_task(void *p)
          * Timeout or NULL pointer received is the signal to flush the data.
          */
         log_msg = NULL;
-        if (!xQueueReceive(g_write_buffer_queue, &log_msg, OS_MS(1000 * FILE_LOGGER_FLUSH_TIMEOUT)) ||
+        if (!xQueueReceive(g_write_buffer_queue, &log_msg, OS_MS(1000 * FILE_LOGGER_FLUSH_TIME_SEC)) ||
             NULL == log_msg)
         {
             logger_write_to_file(start_ptr, (write_ptr - start_ptr));
@@ -256,7 +265,7 @@ static bool logger_initialized(void)
  * @param [in] logger_priority  The priority at which the logger task will run.
  * @returns true if memory allocation succeeded.
  */
-static bool logger_internal_init(int logger_priority)
+static bool logger_internal_init(UBaseType_t logger_priority)
 {
     uint32_t i = 0;
     char * ptr = NULL;
@@ -295,8 +304,12 @@ static bool logger_internal_init(int logger_priority)
     gp_file_ptr = malloc (sizeof(*gp_file_ptr));
     if(FR_OK != f_open(gp_file_ptr, FILE_LOGGER_FILENAME, FA_OPEN_ALWAYS | FA_WRITE))
     {
-        return failure;
+        goto failure;
     }
+#endif
+
+#if BUILD_CFG_MPU
+    logger_priority |= portPRIVILEGE_BIT;
 #endif
 
     if (!xTaskCreate(logger_task, "logger", FILE_LOGGER_STACK_SIZE, NULL, logger_priority, NULL))
@@ -336,22 +349,27 @@ void logger_send_flush_request(void)
     }
 }
 
-int logger_get_blocked_call_count(void)
+uint32_t logger_get_logged_call_count(logger_msg_t severity)
+{
+    return (severity < log_last) ? g_logger_calls[severity] : 0;
+}
+
+uint16_t logger_get_blocked_call_count(void)
 {
     return g_blocked_calls;
 }
 
-int logger_get_highest_file_write_time_ms(void)
+uint16_t logger_get_highest_file_write_time_ms(void)
 {
     return g_highest_file_write_time;
 }
 
-int logger_get_num_buffers_watermark(void)
+uint16_t logger_get_num_buffers_watermark(void)
 {
     return g_buffer_watermark;
 }
 
-void logger_init(int logger_priority)
+void logger_init(uint8_t logger_priority)
 {
     /* Prevent double init */
     if (!logger_initialized())
@@ -359,6 +377,17 @@ void logger_init(int logger_priority)
         if (!logger_internal_init(logger_priority)) {
             printf("ERROR: logger initialization failure\n");
         }
+    }
+}
+
+void logger_set_printf(logger_msg_t type, bool enable)
+{
+    const uint8_t mask = (1 << type);
+    if (enable) {
+        g_logger_printf_mask |= mask;
+    }
+    else {
+        g_logger_printf_mask &= ~mask;
     }
 }
 
@@ -377,7 +406,7 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
     const bool os_running = (taskSCHEDULER_RUNNING == xTaskGetSchedulerState());
 
     /* This must match up with the logger_msg_t enumeration */
-    const char * const type_str[] = { "invalid", "info", "warn", "error" };
+    const char * const type_str[] = { "debug", "info", "warn", "error" };
 
     // Find the back-slash or forward-slash to get filename only, not absolute or relative path
     if(0 != filename) {
@@ -432,7 +461,13 @@ void logger_log(logger_msg_t type, const char * filename, const char * func_name
         va_end(args);
     } while (0);
 
+    ++g_logger_calls[type];
     logger_write_log_message(buffer, os_running);
+
+    /* Print the message out if the printf mask was set */
+    if (g_logger_printf_mask & (1 << type)) {
+        puts(buffer);
+    }
 }
 
 void logger_log_raw(const char * msg, ...)

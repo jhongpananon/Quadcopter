@@ -31,6 +31,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <stdint.h>
 
 
 
@@ -55,22 +56,44 @@ extern "C" {
  * file after this time.
  */
 #define FILE_LOGGER_BUFFER_SIZE      (1 * 1024)     ///< Recommend multiples of 512
-#define FILE_LOGGER_NUM_BUFFERS      20             ///< Number of buffers (need to have enough while file is being written)
+#define FILE_LOGGER_NUM_BUFFERS      10             ///< Number of buffers (need to have enough while file is being written)
 #define FILE_LOGGER_LOG_MSG_MAX_LEN  150            ///< Max length of a log message
-#define FILE_LOGGER_FILENAME         "1:log.csv"    ///< Destination filename (0: for SPI flash, 1: for SD card)
+#define FILE_LOGGER_FILENAME         "0:log.csv"    ///< Destination filename (0: for SPI flash, 1: for SD card)
 #define FILE_LOGGER_STACK_SIZE       (3 * 512 / 4)  ///< Stack size in 32-bit (1 = 4 bytes for 32-bit CPU)
-#define FILE_LOGGER_FLUSH_TIMEOUT    (1 * 60)       ///< Logs are flushed after this time
+#define FILE_LOGGER_FLUSH_TIME_SEC   (1 * 60)       ///< Logs are flushed after this time
 #define FILE_LOGGER_BLOCK_TIME_MS    (10)           ///< If no buffer available within this time, block time counter will increment
 #define FILE_LOGGER_KEEP_FILE_OPEN   (0)            ///< If non-zero, the file will be kept open
 /** @} */
 
 
+/**
+ * Enumeration of the type of the log message.
+ * You should not use this directly for logging call since the macros pass it to logger_log()
+ * But these can be passed to logger_get_logged_call_count()
+ */
+typedef enum {
+    log_debug,  ///< Debug logs are printed to stdio (printf) unless disabled by logger_set_printf()
+    log_info,
+    log_warn,
+    log_error,
+    log_last, ///< Marks the last entry, do not use
+} logger_msg_t;
 
 /**
  * Initializes the logger; this must be done before further logging calls are used.
  * @param [in] logger_priority The priority at which logger should buffer user data and then write to file.
  */
-void logger_init(int logger_priority);
+void logger_init(uint8_t logger_priority);
+
+/**
+ * Enables the given logging severity call to be also printed on printf()
+ * @param [in] type    The severity for which the logging call will be printed
+ * @param [in] enable  If true, the severity level will also get printed to the screen
+ *
+ * Note that if a lot of data is being printed, the logger call may take a while until
+ * the stdio printf() returns back.
+ */
+void logger_set_printf(logger_msg_t type, bool enable);
 
 /**
  * @{ Macros to log a message using printf() style API
@@ -85,6 +108,7 @@ void logger_init(int logger_priority);
 #define LOG_ERROR(msg, p...)  logger_log (log_error, __FILE__, __FUNCTION__, __LINE__, msg, ## p)
 #define LOG_WARN(msg, p...)   logger_log (log_warn,  __FILE__, __FUNCTION__, __LINE__, msg, ## p)
 #define LOG_INFO(msg, p...)   logger_log (log_info,  __FILE__, __FUNCTION__, __LINE__, msg, ## p)
+#define LOG_DEBUG(msg, p...)  logger_log (log_debug, __FILE__, __FUNCTION__, __LINE__, msg, ## p)
 /** @} */
 
 
@@ -129,26 +153,32 @@ void logger_init(int logger_priority);
 void logger_send_flush_request(void);
 
 /**
+ * @returns the number of logged messages for the given severity.
+ * @param [in] severity  The severity for which to get the number of calls.
+ */
+uint32_t logger_get_logged_call_count(logger_msg_t severity);
+
+/**
  * @returns the number of logging calls that ended up blocking or sleeping the task
  *          waiting for a logger buffer to be available.
  *
  * If the number is greater than zero, it indicates that you either need to slow
  * down logger calls, or increase the number of log buffers.
  */
-int logger_get_blocked_call_count(void);
+uint16_t logger_get_blocked_call_count(void);
 
 /**
  * @returns the highest time that was spend writing the logger buffer to file.
  * This can be useful to assess how many FILE_LOGGER_NUM_BUFFERS we need because we only
  * need enough buffers available while the file buffer is being written.
  */
-int logger_get_highest_file_write_time_ms(void);
+uint16_t logger_get_highest_file_write_time_ms(void);
 
 /**
  * @returns the highest watermark of the number of buffers available to the logger
  * This can be useful to assess how many FILE_LOGGER_NUM_BUFFERS we need in the worst case.
  */
-int logger_get_num_buffers_watermark(void);
+uint16_t logger_get_num_buffers_watermark(void);
 
 
 
@@ -157,23 +187,11 @@ int logger_get_num_buffers_watermark(void);
 /* Do not use rest of the API after this line */
 
 /**
- * Enumeration of the type of the log message.
- * You should not use this directly, the macros pass it to logger_log()
- */
-typedef enum {
-    log_invalid = 0,
-    log_info,
-    log_warn,
-    log_error,
-} logger_msg_t;
-
-/**
  * Logs a message.
  * You should not use this directly, the macros pass the arguments to this function.
  */
 void logger_log(logger_msg_t type, const char * filename, const char * func_name, unsigned line_num,
                 const char * msg, ...);
-
 
 /**
  * @see LOG_RAW_MSG()

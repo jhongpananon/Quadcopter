@@ -72,27 +72,29 @@
 #define configUSE_MALLOC_FAILED_HOOK            1   ///< If memory runs out, the hook function is called
 
 #define configCPU_CLOCK_HZ			            (SYS_CFG_DESIRED_CPU_CLK)
-#define configTICK_RATE_HZ			            ( 500 )
-#define configMAX_PRIORITIES			        ( 11 )
+#define configTICK_RATE_HZ			            ( 1000 )
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 
+/* Avoid using IDLE priority since I have found that the logger task corrupts the file system at IDLE priority.
+ * This probably has to do with SPI(with DMA) bus not functioning correctly when IDLE task puts the CPU to sleep.
+ */
+#define configMAX_PRIORITIES                    ( 11 + 1 )
 
-
-#if   (configMAX_PRIORITIES == 2)
-    #define PRIORITY_LOW        0
-    #define PRIORITY_HIGH       1
-#elif (configMAX_PRIORITIES == 3)
-    #define PRIORITY_LOW		0
-    #define PRIORITY_MEDIUM		1
-    #define PRIORITY_HIGH		2
-#elif (configMAX_PRIORITIES == 4)
-    #define PRIORITY_LOW        0
-    #define PRIORITY_MEDIUM     1
+#if   (configMAX_PRIORITIES == 3)
+    #define PRIORITY_LOW        1
     #define PRIORITY_HIGH       2
-    #define PRIORITY_CRITICAL 	3
-#elif (configMAX_PRIORITIES == 11)
+#elif (configMAX_PRIORITIES == 4)
+    #define PRIORITY_LOW		1
+    #define PRIORITY_MEDIUM		2
+    #define PRIORITY_HIGH		3
+#elif (configMAX_PRIORITIES == 5)
+    #define PRIORITY_LOW        1
+    #define PRIORITY_MEDIUM     2
+    #define PRIORITY_HIGH       3
+    #define PRIORITY_CRITICAL 	4
+#elif (configMAX_PRIORITIES == 12)
     typedef enum {
-        priority_1 = 0,
+        priority_1_idle_do_not_use = 0,
         priority_2,
         priority_3,
         priority_4,
@@ -104,6 +106,12 @@
         priority_10,
         priority_11,
     } os_priorities_t;
+
+    // For examples to compile:
+    #define PRIORITY_LOW        1
+    #define PRIORITY_MEDIUM     2
+    #define PRIORITY_HIGH       3
+    #define PRIORITY_CRITICAL   4
 #else
 #error "Invalid priorities configured"
 #endif
@@ -133,7 +141,7 @@
 #define configMAX_TASK_NAME_LEN		            ( 8 )
 #define configUSE_16_BIT_TICKS                  0       ///< Use 16-bit ticks vs. 32-bits
 #define configIDLE_SHOULD_YIELD                 1       ///< See FreeRTOS documentation
-#define configCHECK_FOR_STACK_OVERFLOW          1       ///< 0=OFF, 1=Simple, 2=Complex
+#define configCHECK_FOR_STACK_OVERFLOW          2       ///< 0=OFF, 1=Simple, 2=Complex
 #define configUSE_ALTERNATIVE_API               0       ///< No need to use deprecated API
 #define configQUEUE_REGISTRY_SIZE               0       ///< See FreeRTOS documentation
 
@@ -196,7 +204,7 @@
 	#define configPRIO_BITS       5        /* 32 priority levels */
 #endif
 
-#include "isr_priorities.h"
+#include "lpc_isr.h"
 /* The lowest priority. */
 #define configKERNEL_INTERRUPT_PRIORITY 	    ( IP_KERNEL <<   (8 - configPRIO_BITS) )
 /* Priority 5, or 160 as only the top three bits are implemented. */
