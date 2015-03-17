@@ -88,7 +88,7 @@ int main(void)
     /* Undefine minimal tasks to run all tasks.
      * #define minimal tasks to only run quadcopter and terminal tasks
      */
-     #define MINIMAL_TASKS
+     //#define MINIMAL_TASKS
 
 #ifndef MINIMAL_TASKS
     /* Very important to use & for reference - I learned it the hard way :( */
